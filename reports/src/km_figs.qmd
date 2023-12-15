@@ -1,0 +1,292 @@
+```{r}
+#| label: kmfunc
+#| cache: true
+#| cache.comments: false
+#| dependson: tbl-outcomes
+
+coxvars <- modvars
+coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
+
+kmfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventname, novar = NULL,
+                   labposadj = c(0.18, -0.1)) {
+  levs <- levels(data %>% pull(shf_anxiety))
+  nlevs <- length(levs)
+
+  # cox results
+  mod <- summary(coxph(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ shf_anxiety")),
+    data = data
+  ))
+
+  cox_crude <- c(
+    "Crude HR (95% CI)",
+    "ref",
+    paste0(
+      fn(mod$conf.int[, "exp(coef)"], dig = 2),
+      " (", fn(mod$conf.int[, "lower .95"], dig = 2),
+      "-", fn(mod$conf.int[, "upper .95"], dig = 2), ")"
+    )
+  )
+
+  coxvars2 <- setdiff(coxvars, novar)
+  mod <- summary(pool(with(impdata, coxph(formula(paste0(
+    "Surv(", time, ",", event, " == 'Yes') ~ shf_anxiety + ", paste(coxvars2, collapse = " + ")
+  ))))))
+
+  cox_adj <- c(
+    "Adjusted HR (95% CI)",
+    "ref", 
+    paste0(
+      fn(exp(mod$estimate[1:(nlevs - 1)]), dig = 2),
+      " (", fn(exp(mod$estimate[1:(nlevs - 1)] - global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2),
+      "-", fn(exp(mod$estimate[1:(nlevs - 1)] + global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2), ")"
+    )
+  )
+
+  fit <- survfit(formula(paste0("Surv(", time, ",", event, "== 'Yes') ~ shf_anxiety")),
+    data = data
+  )
+
+  s <- summary(fit, times = seq(0, global_followup, 1), extend = T)
+
+  plot_data <- tibble(
+    "time" = s$time,
+    "n.risk" = s$n.risk,
+    "n.event" = s$n.event,
+    "n.censor" = s$n.censor,
+    "estimate" = 1 - s$surv,
+    "strata" = s$strata
+  ) %>%
+    mutate(
+      strata = fct_rev(fct_inorder(str_remove_all(strata, "shf_anxiety="))),
+    )
+  ylim <- c(0, 1)
+  ylab <- paste0(eventname, " (%)")
+
+  p <- ggplot(plot_data, aes(x = time / 365, y = estimate, color = strata)) +
+    geom_step(aes(linetype = strata), linewidth = 1) +
+    scale_color_manual(values = c(global_cols[3:1])) +
+    # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
+    # scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = c(0, 1), expand = c(0, 0)) +
+    scale_x_continuous(breaks = seq(0, global_followup_years, 1), limits = c(0, global_followup_years)) +
+    scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = ylim) +
+    theme_classic() +
+    theme(
+      text = element_text(size = 20),
+      legend.position = "none"
+    ) +
+    labs(x = "Follow-up (years)", y = ylab) +
+    annotate("text", x = 0, y = c(.97, .87, .77, .67), label = c("", levs), hjust = 0, size = 6, colour = c("black", global_cols[1:3])) +
+    annotate("text", x = 1.65, y = c(.97, .87, .77, .67), label = cox_crude, hjust = 0.5, size = 6) +
+    annotate("text", x = 3.15, y = c(.97, .87, .77, .67), label = cox_adj, hjust = 0.5, size = 6)
+
+  # n at risk
+  table_data <- plot_data %>%
+    filter(
+      time %in% c(seq(0, global_followup_years, 1) * 365)
+    )
+
+  t <- ggplot(table_data, aes(y = strata, x = time / 365)) +
+    geom_text(aes(label = n.risk), size = 6, colour = rep(global_cols[1:3], each = 6)) +
+    # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
+    # scale_y_discrete(expand = c(0, 0)) +
+    scale_x_continuous(breaks = seq(0, global_followup_years, 1), limits = c(0, global_followup_years)) +
+    coord_cartesian(xlim = c(0, global_followup_years), clip = "off") +
+    labs(subtitle = "No. at risk") +
+    theme(
+      plot.caption = element_text(size = 20),
+      panel.background = element_blank(),
+      text = element_text(size = 20),
+      axis.text.x = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title = element_blank(),
+      # plot.margin = unit(c(0, 1, 0, 3), "cm"), # trouble
+      # axis.text.y = element_blank()
+      # axis.text.y = element_text(margin = margin(0, 0, 0, 100))
+      axis.text.y = element_text(hjust = 0, colour = global_cols[3:1])
+    )
+
+  km <- (p / t) + plot_layout(height = c(1, .25))
+  create_pptx(km)
+  km
+}
+```
+
+```{r}
+#| label: fig-cicmcf
+#| cache: true
+#| cache.comments: false
+#| dependson: kmfunc
+#| fig-cap: "Cumulative incidence"
+#| fig-subcap: !expr outvars$name
+#| layout-ncol: 2
+#| layout-nrow: 2
+
+nr <- 1
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 2
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 3
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+nr <- 4
+kmfunc(
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr]
+)
+```
+
+```{r}
+#| label: fig-cicmcf-ref
+#| cache: true
+#| cache.comments: false
+#| dependson: kmfunc
+#| fig-cap: "Cumulative incidence - HFrEF"
+#| fig-subcap: !expr outvars$name
+#| layout-ncol: 2
+#| layout-nrow: 2
+
+nr <- 1
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFrEF"),
+  impdata = impdataref,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+nr <- 2
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFrEF"),
+  impdata = impdataref,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+nr <- 3
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFrEF"),
+  impdata = impdataref,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+nr <- 4
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFrEF"),
+  impdata = impdataref,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+```
+
+```{r}
+#| label: fig-cicmcf-mref
+#| cache: true
+#| cache.comments: false
+#| dependson: kmfunc
+#| fig-cap: "Cumulative incidence - HFmrEF"
+#| fig-subcap: !expr outvars$name
+#| layout-ncol: 2
+#| layout-nrow: 2
+
+nr <- 1
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFmrEF"),
+  impdata = impdatamref,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+nr <- 2
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFmrEF"),
+  impdata = impdatamref,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+nr <- 3
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFmrEF"),
+  impdata = impdatamref,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+nr <- 4
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFmrEF"),
+  impdata = impdatamref,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+```
+
+```{r}
+#| label: fig-cicmcf-pef
+#| cache: true
+#| cache.comments: false
+#| dependson: kmfunc
+#| fig-cap: "Cumulative incidence - HFpEF"
+#| fig-subcap: !expr outvars$name
+#| layout-ncol: 2
+#| layout-nrow: 2
+
+nr <- 1
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFpEF"),
+  impdata = impdatapef,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+nr <- 2
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFpEF"),
+  impdata = impdatapef,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+nr <- 3
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFpEF"),
+  impdata = impdatapef,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+nr <- 4
+kmfunc(
+  data = rsdata %>% filter(shf_ef_cat == "HFpEF"),
+  impdata = impdatapef,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_ef_cat"
+)
+```

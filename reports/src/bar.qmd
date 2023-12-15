@@ -1,0 +1,35 @@
+
+```{r}
+#| label: fig-barplot
+#| cache: true
+#| cache.comments: false
+#| fig-cap: "Anxiety/depression by EF"
+#| fig-width: 10
+#| fig-height: 8
+
+figdata <- rsdata %>%
+    group_by(shf_ef_cat, .drop = F) %>%
+    count(shf_anxiety) %>%
+    mutate(
+      p = n / sum(n) * 100
+    ) %>%
+    ungroup()
+
+p <- ggplot(figdata, aes(x = shf_ef_cat, y = p, fill = shf_anxiety)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_y_continuous(limits = c(0, 100)) +
+  theme_classic() +
+  theme(
+    text = element_text(size = 22),
+    legend.position = "bottom",
+    legend.box = "vertical",
+    legend.title = element_blank(),
+    axis.title.x = element_blank()
+  ) +
+  labs(y = "Proportion (%)") +
+  geom_text(aes(label = fn(p, dec = 0)), position = position_dodge(width = 0.9), vjust = -0.25, size = 8)
+
+create_pptx(p, width = 10, height = 8)
+p
+```
