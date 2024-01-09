@@ -8,7 +8,7 @@ rsdata <- cut_surv(rsdata, sos_out_death, sos_outtime_death, global_followup, cu
 rsdata <- rsdata %>%
   mutate(
     censdtm = pmin(shf_indexdtm + global_followup, censdtm),
-    shf_anxiety = factor(shf_anxiety, levels = c("None", "Moderate", "Severe")), 
+    shf_anxiety = factor(shf_anxiety, levels = c("None", "Moderate", "Severe")),
     shf_indexyear_cat = factor(case_when(
       shf_indexyear <= 2015 ~ "2008-2015",
       shf_indexyear <= 2018 ~ "2016-2018",
@@ -56,27 +56,22 @@ nt <- rsdata %>%
   reframe(ntmed = list(enframe(quantile(shf_ntprobnp,
     probs = c(0.33, 0.66),
     na.rm = TRUE
-  ))), .by = shf_ef_cat) %>%
+  )))) %>%
   unnest(cols = c(ntmed)) %>%
   pivot_wider(names_from = name, values_from = value)
 
-rsdata <- left_join(
-  rsdata,
-  nt,
-  by = c("shf_ef_cat")
-) %>%
+rsdata <- rsdata %>%
   mutate(
     shf_ntprobnp_cat = factor(
       case_when(
-        shf_ntprobnp < `33%` ~ 1,
-        shf_ntprobnp < `66%` ~ 2,
-        shf_ntprobnp >= `66%` ~ 3
+        shf_ntprobnp < nt$`33%` ~ 1,
+        shf_ntprobnp < nt$`66%` ~ 2,
+        shf_ntprobnp >= nt$`66%` ~ 3
       ),
       levels = 1:3,
-      labels = c("1st tertile within EF", "2nd tertile within EF", "3rd tertile within EF")
+      labels = c("1st tertile", "2nd tertile", "3rd tertile")
     )
-  ) %>%
-  select(-`33%`, -`66%`)
+  )
 
 rsdata <- rsdata %>%
   mutate(across(where(is_character), factor))

@@ -1,0 +1,186 @@
+```{r}
+#| label: predictors
+#| cache: true
+#| cache.comments: false
+#| output: false
+
+adjmod <- with(imprsdata, multinom(formula(paste0("shf_anxiety ~ ", paste(modvars, collapse = " + ")))))
+adjmod <- summary(pool(adjmod))
+
+adj <- tibble(
+  anxiety = adjmod$y.level,
+  var = as.character(adjmod$term),
+  or = exp(adjmod$estimate),
+  lci = exp(adjmod$estimate - global_z05 * adjmod$std.error),
+  uci = exp(adjmod$estimate + global_z05 * adjmod$std.error),
+  # p = fn(adjmod$p.value, dig = 3, p = TRUE),
+  orci = paste0(
+    fn(or, 2), " (",
+    fn(lci, 2), "-",
+    fn(uci, 2), ")" # , ",
+    # p
+  ),
+  cols = factor(case_when(
+    adjmod$p.value >= 0.05 ~ 2,
+    or >= 1 ~ 1,
+    or < 1 ~ 3
+  ))
+) %>%
+  filter(!var %in% c("(Intercept)")) %>%
+  mutate(
+    var = str_replace_all(var, fixed("Yes"), ""),
+    var = str_replace_all(var, "shf_sos_com_", "sos_com_")
+  )
+
+adj <- left_join(adj,
+  metavars %>%
+    select(variable, label),
+  by = c("var" = "variable")
+) %>%
+  mutate(
+    var = coalesce(label, var),
+    var = case_when(
+      var == "shf_indexyear_cat2011-2015" ~ "Year 2011-2015 vs 2000-2010",
+      var == "shf_indexyear_cat2016-2018" ~ "Year 2016-2018 vs 2000-2010",
+      var == "shf_indexyear_cat2019-2021" ~ "Year 2019-2021 vs 2000-2010",
+      var == "shf_durationhf>=6mo" ~ "Duration of HF (months) >=6 vs < 6",
+      var == "shf_sexMale" ~ "Male vs Female",
+      var == "shf_age_cat>80" ~ "Age (years) >80 vs <70",
+      var == "shf_age_cat70-80" ~ "Age (years) 70-80 vs <70",
+      var == "shf_locationIn-patient" ~ "In-patient vs Out-patient",
+      var == "shf_followuplocation_catHospital" ~ "Follow-up hospital vs Primary care/Other",
+      var == "shf_ef_catHFmrEF" ~ "HFmrEF vs HFrEF",
+      var == "shf_ef_catHFpEF" ~ "HFpEF vs HFrEF",
+      var == "shf_durationhf>6mo" ~ "Duration HF (mo) >=6 vs <6",
+      var == "shf_nyha_catIII-IV" ~ "NYHA class III-IV vs I-II",
+      var == "shf_bmi_cat>=30" ~ "BMI (kg/m²) >=30 vs <30",
+      var == "shf_map_cat>90" ~ "MAP >90 vs <=90",
+      var == "shf_heartrate_cat>70" ~ "Heart rate (beats/min) >70 vs <=70",
+      var == "shf_gfrckdepi_cat<60" ~ "eGFR (mL/min/1.73 m²) <60 vs >=60",
+      var == "shf_potassium_catHyperkalemia" ~ "Hyperkalemia vs Normakalemia",
+      var == "shf_potassium_catHypokalemia" ~ "Hypokalemia vs Normakalemia",
+      var == "shf_ntprobnp_cat3rd tertile" ~ "NT-proBNP (pg/ml) 3rd tertile vs 1st tertile",
+      var == "shf_ntprobnp_cat2nd tertile" ~ "NT-proBNP (pg/ml) 2nd tertile vs 1st tertile",
+      var == "shf_device_catCRT/ICD" ~ "ICD/CRT",
+      var == "scb_famtypeLiving alone" ~ "Living alone vs Cohabitating",
+      var == "scb_educationSecondary school" ~ "Secondary vs Compulsory school",
+      var == "scb_educationUniversity" ~ "University vs Compulsory school",
+      var == "scb_dispincome_cat3rd tertile within year" ~ "Income 3rd tertile vs 1st tertile",
+      var == "scb_dispincome_cat2nd tertile within year" ~ "Income 2nd tertile vs 1st tertile",
+      TRUE ~ var
+    ),
+    var = str_replace_all(var, ">=", "\u2265"),
+    var = str_replace_all(var, "<=", "\u2264"),
+    var2 = forcats::fct_rev(forcats::fct_inorder(var))
+  )
+```
+
+```{r}
+#| label: fig-predictors
+#| cache: true
+#| cache.comments: false
+#| dependson: predictors
+#| fig-cap: "Independent associations between baseline characteristics and anxiety/depression"
+#| fig-width: 10
+#| fig-height: 6
+
+# plot it
+size_use <- 10
+
+# min(adj$lci)
+# max(adj$uci)
+
+xmin = .35
+xmax = 4
+
+p1 <- ggplot(adj %>% filter(anxiety == "Moderate"), aes(x = or, y = var2, color = cols)) +
+  # Add dot plot and error bars
+  geom_errorbar(aes(xmin = lci, xmax = uci), width = 0.35, linewidth = 0.3) +
+  geom_point(size = 1.5, shape = 15) +
+  # Add a reference dashed line at 1
+  geom_vline(xintercept = 1, linetype = "longdash", color = "grey") +
+  scale_color_manual(values = global_cols[c(2, 3, 1)]) +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_text(color = "black", hjust = 0),
+    axis.line.y = element_line(colour = "white"),
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    plot.margin = unit(c(0, 0, 0, 0), "mm")
+  ) +
+  scale_x_continuous(trans = "log", breaks = c(xmin, 1, xmax),  limits = c(xmin, xmax)) +
+  labs(title = "Moderate vs None", 
+       subtitle = "Odds Ratio (95% CI)")
+
+p2 <- ggplot(adj %>% filter(anxiety == "Severe"), aes(x = or, y = var2, color = cols)) +
+  # Add dot plot and error bars
+  geom_errorbar(aes(xmin = lci, xmax = uci), width = 0.35, linewidth = 0.3) +
+  geom_point(size = 1.5, shape = 15) +
+  # Add a reference dashed line at 1
+  geom_vline(xintercept = 1, linetype = "longdash", color = "grey") +
+  scale_color_manual(values = global_cols[c(2, 3, 1)]) +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_text(color = "black", hjust = 0),
+    axis.line.y = element_line(colour = "white"),
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    plot.margin = unit(c(0, 0, 0, 0), "mm")
+  ) +
+  scale_x_continuous(trans = "log", breaks = c(xmin, 1, xmax),  limits = c(xmin, xmax)) +
+  labs(title = "Severe vs None", 
+       subtitle = "Odds Ratio (95% CI)")
+
+t_or1 <- ggplot(adj %>% filter(anxiety == "Moderate")) +
+  geom_text(aes(y = var2, x = 1, label = orci), size = size_use / .pt * 0.8) +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_text(color = "black", hjust = 0),
+    axis.line.y = element_line(colour = "white"),
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    plot.margin = unit(c(0, 0, 0, 0), "mm"), 
+    axis.line.x = element_line(color = "white"),
+    axis.ticks.x = element_line(color = "white"),
+    axis.text.x = element_text(color = "white")
+  ) +
+  labs(title = "Moderate vs None", 
+       subtitle = "Odds Ratio (95% CI)")
+
+t_or2 <- ggplot(adj %>% filter(anxiety == "Severe")) +
+  geom_text(aes(y = var2, x = 1, label = orci), size = size_use / .pt * 0.8) +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_text(color = "black", hjust = 0),
+    axis.line.y = element_line(colour = "white"),
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    plot.margin = unit(c(0, 0, 0, 0), "mm"), 
+    axis.line.x = element_line(color = "white"),
+    axis.ticks.x = element_line(color = "white"),
+    axis.text.x = element_text(color = "white")
+  ) +
+  labs(title = "Severe vs None", 
+       subtitle = "Odds Ratio (95% CI)")
+
+pall <- t_or1 + p1 + t_or2 + p2 + plot_layout(axes = "collect", nrow = 1, width = c(2, 3.7, 2, 3.7))
+
+create_pptx(pall, width = 10, height = 6)
+pall
+```

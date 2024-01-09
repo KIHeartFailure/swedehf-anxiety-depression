@@ -1,5 +1,5 @@
 ---
-title: "Statistical report: Anxiety/depression across the EF spectrum: an analyses from the Swedish Heart Failure registry"
+title: "Statistical report: Anxiety/depression across the EF spectrum: an analyses from the Swedish Heart Failure Registry"
 subtitle: Draft
 date: "`r Sys.Date()`"
 cover: static/ki_logo_vert_rgb.png
@@ -116,7 +116,11 @@ Information on data sources, definitions etc. are found https://kiheartfailure.g
 
 {{< include src/vars.qmd >}}
 
-\clearpage
+### Anxiety/depression
+
+1. None = "Jag är inte orolig eller nedstämd"
+2. Moderate = "Jag är orolig eller nedstämd i viss utsträckning"
+3. Severe = "Jag är i högsta grad orolig eller nedstämd"
 
 # Statistical analysis 
 
@@ -126,9 +130,11 @@ All analyses were performed using `r sessionInfo()$R.version$version.string` [@r
 The level of significance is set to 5%, two-sided. No adjustment for multiple 
 comparisons were made and therefore the results should be viewed with care.
 
+TO DO: Skicka projektansökan till swedehf styrgrupp. Slå ihop med QoL projekansökan?
+
 ## Missing data
 
-Missing data was imputed with multiple imputation (n = 10) using mice [@mice]. 
+Missing data was imputed with multiple imputation (n = 10) using mice [@mice] and Rubin’s rules was used for combining estimates and standard errors across imputed data sets. 
 Variables included in the model are indicated in @tbl-base. 
 All-cause death was included as the Nelson-Aalen estimator.
 
@@ -142,10 +148,16 @@ differences between groups with the Kruskal-Wallis test.
 
 Separate analyses were further performed for the respective EF groups. 
 
+FRÅGA: Kolla noga igenom variabler i tabell och vilka som ska justeras för i modeller. 
+
 ## Independent associations between baseline characteristics and anxiety/depression
 
 The association between baseline characteristics and anxiety/depression was evaluated using a multivariable multinominal regression 
 including the variables indicated in @tbl-base (all shown in @fig-predictors). The variables were selected based on clinical relevance. 
+
+FRÅGA: Ska out of breath mm (övriga qol variabler) justeras för???? Mycket samvariation antar jag (detta är ju också känslofrågor, så om man är deprimerad uppfattar man ju att man är sämre gällande andfåddhet, och sämre andfåddhet gör ju att man blir deppad). 
+
+FRÅGA: Ska detta göras uppdelat på EF (så associationer mellan anxiety/depression och baseline char INOM respektive EF grupp)? 
 
 ### Assumptions
 
@@ -161,8 +173,7 @@ The following outcomes are considered:
 - `r paste0(outvars$name[3], " (", outvars$shortname[3], ")")`
 - `r paste0(outvars$name[4], " (", outvars$shortname[4], ")")`
 
-Time to first events were presented with cumulative incidence curves by anxiety/depression 
-for the primary outcome, all-cause death. Separate figures were also performed for the respective EF groups. 
+Time to first events were presented with cumulative incidence curves by anxiety/depression. Separate figures were also performed for the respective EF groups. 
 
 Crude and adjusted analyses were performed where adjustment was performed for 
 variables indicated in @tbl-base. 
@@ -175,10 +186,14 @@ Data were censored at `r global_followup_years` years follow-up, 2021-12-31 or e
 
 Separate analyses were further performed for the respective EF groups. 
 
+FRÅGA: SKA KLIPPA VID 5 ÅR?
+
 ### Association between outcomes and anxiety/depression - Subgroups
 
 Associations across pre-specified subgroups were evaluated using an interaction term between anxiety/depression and the 
-respective variable for the primary outcome and presented in a Forest plot. FIXA: Location, age, sex, utbildning, inkomst, barn, om man bor ensam, ckd, ef, hfduration, nyha, ntprobnp, stroke. 
+respective variable for the primary outcome and presented in a Forest plot. 
+
+FRÅGA: FUNDERA PÅ ATT EV TA BORT utfallstab uppdelat på EF. Finns i Subgrupps forestplot. note to self: ändra då KM fig så tas från itneraktionsmodell och inte subgrupper. 
 
 ### Assumptions
 
@@ -215,7 +230,7 @@ The median (q1-q3) age is `r med` and `r percfem`% females.
 
 ## Independent associations between baseline characteristics and anxiety/depression
 
-#{{< include src/predictors.qmd >}}
+{{< include src/predictors.qmd >}}
 
 ## Association between outcomes and anxiety/depression
 
@@ -243,9 +258,11 @@ The median (min-max) follow-up is
 
 {{< include src/km_figs.qmd >}}
 
+\clearpage
+
 ### Association between outcomes and anxiety/depression - Subgroups
 
-#{{< include src/outcomes_subgroups.qmd >}}
+{{< include src/outcomes_subgroups.qmd >}}
 
 \clearpage
 

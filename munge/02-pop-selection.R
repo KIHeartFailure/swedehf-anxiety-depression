@@ -2,6 +2,8 @@
 
 flow <- flow[1:10, 1:2]
 
+names(flow) <- c("Criteria", "N")
+
 flow <- rbind(c("General inclusion/exclusion criteria", ""), flow)
 
 flow <- rbind(flow, c("Project specific inclusion/exclusion criteria", ""))

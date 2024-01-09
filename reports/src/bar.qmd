@@ -8,12 +8,12 @@
 #| fig-height: 8
 
 figdata <- rsdata %>%
-    group_by(shf_ef_cat, .drop = F) %>%
-    count(shf_anxiety) %>%
-    mutate(
-      p = n / sum(n) * 100
-    ) %>%
-    ungroup()
+  group_by(shf_ef_cat, .drop = F) %>%
+  count(shf_anxiety) %>%
+  mutate(
+    p = n / sum(n) * 100
+  ) %>%
+  ungroup()
 
 p <- ggplot(figdata, aes(x = shf_ef_cat, y = p, fill = shf_anxiety)) +
   geom_bar(stat = "identity", position = "dodge") +

@@ -1,0 +1,247 @@
+```{r}
+#| label: outcomessubfunc
+#| cache: true
+#| cache.comments: false
+
+coxvars <- modvars
+coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
+
+outcomessubfunc <- function(time = "sos_outtime_death", event = "sos_out_death", xvar = "shf_anxiety", intvar) {
+  levs <- levels(rsdata %>% pull(!!sym(xvar)))
+
+  nlevs <- length(levs)
+
+  levsint <- levels(rsdata %>% pull(!!sym(intvar)))
+  nlevsint <- length(levsint)
+
+  out <- data.frame(matrix(NA, ncol = 11, nrow = nlevsint + 1))
+  colnames(out) <- c("var", "level", "hr_1", "lci_1", "uci_1", "p_1", "hr_2", "lci_2", "uci_2", "p_2", "pint")
+
+  out[1, 1] <- intvar
+  out[2:(nlevsint + 1), 2] <- paste0("  ", levsint)
+
+  ## adjusted regression
+  coxvars2 <- coxvars[!modvars %in% c(intvar)]
+  for (i in seq_along(levsint)) {
+    mod <- with(imprsdata, coxph(formula(paste0(
+      "Surv(", time, ",", event, " == 'Yes') ~ ", xvar, " * relevel(", intvar, ", ref = '", levsint[i], "') +", paste(coxvars2, collapse = " + ")
+    ))))
+    smod <- summary(pool(mod))
+
+    out[(i + 1), c("hr_1", "hr_2")] <- exp(smod$estimate[1:(nlevs - 1)])
+    out[(i + 1), c("lci_1", "lci_2")] <- exp(smod$estimate[1:(nlevs - 1)] - global_z05 * smod$std.error[1:(nlevs - 1)])
+    out[(i + 1), c("uci_1", "uci_2")] <- exp(smod$estimate[1:(nlevs - 1)] + global_z05 * smod$std.error[1:(nlevs - 1)])
+    out[(i + 1), c("p_1", "p_2")] <- fn(smod$p.value[1:(nlevs - 1)], dig = 3, p = TRUE)
+
+    if (i == 1) {
+      mod_noint <- with(imprsdata, coxph(formula(paste0(
+        "Surv(", time, ",", event, " == 'Yes') ~ ", xvar, " + relevel(", intvar, ", ref = '", levsint[i], "') +", paste(coxvars2, collapse = " + ")
+      ))))
+      pint <- mice::D1(mod, mod_noint)
+      out[1, "pint"] <- fn(pint$result[, "P(>F)"], p = T, dig = 3)
+    }
+  }
+  return(out)
+}
+
+outcomessub <- outcomessubfunc(intvar = "shf_sex")
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "shf_age_cat"))
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "shf_location"))
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "shf_durationhf"))
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "shf_ef_cat"))
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "shf_nyha_cat"))
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "shf_ntprobnp_cat"))
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "shf_gfrckdepi_cat"))
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "sos_com_stroke"))
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "scb_famtype"))
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "scb_child"))
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "scb_education"))
+outcomessub <- bind_rows(outcomessub, outcomessubfunc(intvar = "scb_dispincome_cat"))
+```
+
+```{r}
+#| label: fig-outcomes-subgroup
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomessubfunc
+#| fig-cap: "Association between all-cause death and anxiety/depression - Subgroups"
+#| fig-width: 10
+#| fig-height: 6
+subplot <- outcomessub %>%
+  # outcomessub <- raw %>%
+  mutate(
+    var_tmp = var,
+    var_tmp = str_replace_all(var_tmp, "(_cat2|_cat)", ""),
+    # if shf/sos combination  will still get org label
+    var_tmp = str_replace_all(var_tmp, "shf_sos_com_", "sos_com_"), 
+    level = str_remove_all(level, " within year"), 
+    level = str_replace_all(level, "6mo", "6")
+  )
+
+subplot <- left_join(subplot,
+  metavars %>%
+    select(variable, label, unit),
+  by = c("var_tmp" = "variable")
+) %>%
+  mutate(
+    Variable = coalesce(label, var_tmp),
+    Variable = if_else(!is.na(unit),
+      paste0(Variable, " (", unit, ")"),
+      Variable
+    ),
+    # small fixes
+    Variable = str_replace_all(Variable, fixed("Disposable income (100 SEK)"), "Income"),
+    Variable = str_replace_all(Variable, fixed("Duration of HF"), "Duration of HF (months)"),
+    hrcip_1 = if_else(!is.na(hr_1), paste0(
+      fn(hr_1, dig = 2),
+      " (", fn(lci_1, dig = 2),
+      "-", fn(uci_1, dig = 2), "), ",
+      p_1
+    ), NA),
+    hrcip_2 = if_else(!is.na(hr_2), paste0(
+      fn(hr_2, dig = 2),
+      " (", fn(lci_2, dig = 2),
+      "-", fn(uci_2, dig = 2), "), ",
+      p_2
+    ), NA),
+    cols_1 = factor(case_when(
+      p_1 >= 0.05 ~ 2,
+      hr_1 >= 1 ~ 1,
+      hr_1 < 1 ~ 3
+    )),
+    cols_2 = factor(case_when(
+      p_2 >= 0.05 ~ 2,
+      hr_2 >= 1 ~ 1,
+      hr_2 < 1 ~ 3
+    )),
+    Variable = coalesce(Variable, level),
+    Variable = str_replace_all(Variable, ">=", "\u2265"),
+    Variable = str_replace_all(Variable, "<=", "\u2264"),
+    order = n():1
+  )
+
+# plot it
+size_use <- 10
+
+# min(c(subplot$lci_1, subplot$lci_2), na.rm = T)
+# max(c(subplot$uci_1, subplot$uci_2), na.rm = T)
+
+xmin = .9
+xmax = 2
+
+p1 <- ggplot(subplot, aes(x = hr_1, y = order, color = cols_1)) +
+  # Add dot plot and error bars
+  geom_errorbar(aes(xmin = lci_1, xmax = uci_1), width = 0.35, linewidth = 0.3) +
+  geom_point(size = 1.5, shape = 15) +
+  # Add a reference dashed line at 1
+  geom_vline(xintercept = 1, linetype = "longdash", color = "grey") +
+  scale_color_manual(values = global_cols[c(2, 3, 1)]) +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_text(color = "black", hjust = 0),
+    axis.line.y = element_line(colour = "white"),
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, size = size_use * 0.8),
+    plot.margin = unit(c(0, 0, 0, 0), "mm")
+  ) +
+  scale_x_continuous(trans = "log", breaks = c(xmin, 1, xmax),  limits = c(xmin, xmax)) +
+  scale_y_continuous(labels = subplot$Variable, breaks = subplot$order) +
+  labs(title = "Moderate vs None", 
+       subtitle = "Hazard Ratio (95% CI)")
+
+p2 <- ggplot(subplot, aes(x = hr_2, y = order, color = cols_2)) +
+  # Add dot plot and error bars
+  geom_errorbar(aes(xmin = lci_2, xmax = uci_2), width = 0.35, linewidth = 0.3) +
+  geom_point(size = 1.5, shape = 15) +
+  # Add a reference dashed line at 1
+  geom_vline(xintercept = 1, linetype = "longdash", color = "grey") +
+  scale_color_manual(values = global_cols[c(2, 3, 1)]) +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_text(color = "black", hjust = 0),
+    axis.line.y = element_line(colour = "white"),
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, size = size_use * 0.8),
+    plot.margin = unit(c(0, 0, 0, 0), "mm")
+  ) +
+  scale_x_continuous(trans = "log", breaks = c(xmin, 1, xmax),  limits = c(xmin, xmax)) +
+  scale_y_continuous(labels = subplot$Variable, breaks = subplot$order) +
+  labs(title = "Severe vs None", 
+       subtitle = "Hazard Ratio (95% CI)")
+
+t_1 <- ggplot(subplot) +
+  geom_text(aes(y = order, x = 1, label = hrcip_1), size = size_use / .pt * 0.8) +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_text(color = "black", hjust = 0),
+    axis.line.y = element_line(colour = "white"),
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, size = size_use * 0.8),
+    plot.margin = unit(c(0, 0, 0, 0), "mm"), 
+    axis.line.x = element_line(color = "white"),
+    axis.ticks.x = element_line(color = "white"),
+    axis.text.x = element_text(color = "white")
+  ) +
+  scale_y_continuous(labels = subplot$Variable, breaks = subplot$order) +
+  labs(title = "Moderate vs None", 
+       subtitle = "Hazard Ratio (95% CI), p-value")
+
+t_2 <- ggplot(subplot) +
+  geom_text(aes(y = order, x = 1, label = hrcip_2), size = size_use / .pt * 0.8) +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_text(color = "black", hjust = 0),
+    axis.line.y = element_line(colour = "white"),
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, size = size_use * 0.8),
+    plot.margin = unit(c(0, 0, 0, 0), "mm"), 
+    axis.line.x = element_line(color = "white"),
+    axis.ticks.x = element_line(color = "white"),
+    axis.text.x = element_text(color = "white")
+  ) +
+  scale_y_continuous(labels = subplot$Variable, breaks = subplot$order) +
+  labs(title = "Severe vs None", 
+       subtitle = "Hazard Ratio (95% CI), p-value")
+
+pint <- ggplot(subplot) +
+  geom_text(aes(y = order, x = 1, label = pint), size = size_use / .pt * 0.8) +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_text(color = "black", hjust = 0),
+    axis.line.y = element_line(colour = "white"),
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, size = size_use * 0.8),
+    plot.margin = unit(c(0, 0, 0, 0), "mm"), 
+    axis.line.x = element_line(color = "white"),
+    axis.ticks.x = element_line(color = "white"),
+    axis.text.x = element_text(color = "white")
+  ) +
+  scale_y_continuous(labels = subplot$Variable, breaks = subplot$order) +
+  labs(subtitle = "P-value interaction", 
+       title = " ")
+
+pall <- t_1 + p1 + t_2 + p2 + pint + plot_layout(axes = "collect", nrow = 1, width = c(2.2, 3.4, 2.2, 3.4, 1.1))
+
+create_pptx(pall, width = 10, height = 6)
+pall
+```

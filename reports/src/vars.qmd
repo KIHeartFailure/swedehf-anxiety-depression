@@ -5,7 +5,7 @@
 #| tbl-cap: "Variable definitions and data source"
 
 vars <- bind_rows(
-  tibble(var = tabvars),
+  tibble(var = c("shf_anxiety", tabvars)),
   outvars %>%
     filter(!composite & !rep) %>%
     select(var, name),
@@ -75,7 +75,7 @@ vars <- vars %>%
     ),
     data5 = if_else(str_detect(var, "scb_famtype|scb_education|scb_dispincome"), "LISA", NA),
     data6 = if_else(str_detect(var, "scb_child"), "RTP", NA),
-      footnote1 = if_else(str_detect(var, "sos_com") &
+    footnote1 = if_else(str_detect(var, "sos_com") &
       !Variable %in% c("Charlson Comorbidity Index"),
     footnote_marker_alphabet(1, format = "latex"), ""
     ),

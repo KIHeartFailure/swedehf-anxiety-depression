@@ -182,7 +182,7 @@ basetabfunc <- function(data, novars = NULL) {
     mutate(
       footnote1 = if_else(!is.na(var) & var %in% modvars, footnote_marker_alphabet(1, format = "latex"), ""),
       footnote2 = if_else(!is.na(var) & var %in% c("shf_potassium_cat", "shf_potassium"), footnote_marker_alphabet(2, format = "latex"), ""),
-      footnote2 = if_else(!is.na(var) & var %in% c("shf_sglt2"), footnote_marker_alphabet(3, format = "latex"), "")
+      footnote3 = if_else(!is.na(var) & var %in% c("shf_sglt2"), footnote_marker_alphabet(3, format = "latex"), "")
     ) %>%
     unite(footnote, starts_with("footnote"), sep = "")
 

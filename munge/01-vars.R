@@ -13,6 +13,7 @@ tabvars <- c(
   "shf_followuplocation_cat",
 
   # clinical factors and lab measurements
+  "shf_durationhf", 
   "shf_ef_cat",
   "shf_nyha",
   "shf_nyha_cat",
@@ -43,7 +44,7 @@ tabvars <- c(
   "sos_com_valvular",
   "sos_com_liver",
   "sos_com_copd",
-  "sos_com_cancer3y", 
+  "sos_com_cancer3y",
   "sos_com_charlsonci",
   "sos_com_charlsonci_cat",
 
@@ -66,7 +67,13 @@ tabvars <- c(
   "scb_education",
   "scb_dispincome_cat",
   "shf_qol",
-  "shf_qol_cat"
+  "shf_qol_cat",
+  "shf_fatigue",
+  "shf_outofbreath",
+  "shf_mobility",
+  "shf_hygiene",
+  "shf_activities",
+  "shf_pain"
 )
 
 # Variables for models (imputation, log, cox reg) ----------------------------
@@ -90,6 +97,12 @@ tabvars_not_in_mod <- c(
   "sos_com_charlsonci_cat",
   "shf_qol",
   "shf_qol_cat",
+  "shf_fatigue",
+  "shf_outofbreath",
+  "shf_mobility",
+  "shf_hygiene",
+  "shf_activities",
+  "shf_pain",
   "shf_sglt2"
 )
 
@@ -98,7 +111,7 @@ modvars <- tabvars[!(tabvars %in% tabvars_not_in_mod)]
 stratavars <- c("shf_location")
 
 outvars <- tibble(
-  var = c("sos_out_death","sos_out_deathcv","sos_out_hosphf", "sos_out_hospany"),
+  var = c("sos_out_death", "sos_out_deathcv", "sos_out_hosphf", "sos_out_hospany"),
   time = c("sos_outtime_death", "sos_outtime_death", "sos_outtime_hosphf", "sos_outtime_hospany"),
   shortname = c("ACD", "CVD", "1HFH", "1ACH"),
   name = c("All-cause death", "CV death", "First HF hospitalization", "First all-cause hospitalization"),

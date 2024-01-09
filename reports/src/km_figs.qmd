@@ -34,7 +34,7 @@ kmfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventname, n
 
   cox_adj <- c(
     "Adjusted HR (95% CI)",
-    "ref", 
+    "ref",
     paste0(
       fn(exp(mod$estimate[1:(nlevs - 1)]), dig = 2),
       " (", fn(exp(mod$estimate[1:(nlevs - 1)] - global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2),

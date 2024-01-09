@@ -36,6 +36,7 @@ library(epitools)
 library(survminer) # check assumptions
 library(splines)
 library(reda) # for MCF (repeated events)
+library(nnet) # for multinominal regression
 
 # imputation
 library("mice")
