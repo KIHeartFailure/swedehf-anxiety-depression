@@ -1,5 +1,5 @@
 ---
-title: "Statistical report: Anxiety/depression across the EF spectrum: an analyses from the Swedish Heart Failure Registry"
+title: "Statistical report: Anxiety/depression across the EF spectrum: an analysis from the Swedish Heart Failure Registry"
 subtitle: Draft
 date: "`r Sys.Date()`"
 cover: static/ki_logo_vert_rgb.png
@@ -237,9 +237,9 @@ The median (q1-q3) age is `r med` and `r percfem`% females.
 ```{r}
 medsurv <- rsdata %>%
   summarise(
-    med = fn(median(sos_outtime_death / 365.25), dig = 1),
-    min = fn(min(sos_outtime_death / 365.25), dig = 1),
-    max = fn(max(sos_outtime_death / 365.25), dig = 1)
+    med = fn(median(sos_outtime_death / 365.25) * 12, dig = 0),
+    min = fn(min(sos_outtime_death / 365.25) * 12, dig = 0),
+    max = fn(max(sos_outtime_death / 365.25) * 12, dig = 0)
   ) %>%
   mutate(out = paste0(med, " (", min, "-", max, ")")) %>%
   pull(out)
@@ -250,7 +250,7 @@ sumsurv <- rsdata %>%
 ```
 
 The median (min-max) follow-up is 
-`r medsurv` years for a total of `r sumsurv` patient-years of follow-up.
+`r medsurv` months for a total of `r sumsurv` patient-years of follow-up.
 
 {{< include src/outcomes.qmd >}}
 

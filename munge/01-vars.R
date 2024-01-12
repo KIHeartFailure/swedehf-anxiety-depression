@@ -13,7 +13,7 @@ tabvars <- c(
   "shf_followuplocation_cat",
 
   # clinical factors and lab measurements
-  "shf_durationhf", 
+  "shf_durationhf",
   "shf_ef_cat",
   "shf_nyha",
   "shf_nyha_cat",
@@ -113,7 +113,7 @@ stratavars <- c("shf_location")
 outvars <- tibble(
   var = c("sos_out_death", "sos_out_deathcv", "sos_out_hosphf", "sos_out_hospany"),
   time = c("sos_outtime_death", "sos_outtime_death", "sos_outtime_hosphf", "sos_outtime_hospany"),
-  shortname = c("ACD", "CVD", "1HFH", "1ACH"),
+  shortname = c("All-cause death", "CVD", "1st HFH", "1st all-cause H"),
   name = c("All-cause death", "CV death", "First HF hospitalization", "First all-cause hospitalization"),
   composite = c(F, F, F, F),
   rep = c(F, F, F, F),

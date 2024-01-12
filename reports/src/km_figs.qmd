@@ -76,8 +76,8 @@ kmfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventname, n
     ) +
     labs(x = "Follow-up (years)", y = ylab) +
     annotate("text", x = 0, y = c(.97, .87, .77, .67), label = c("", levs), hjust = 0, size = 6, colour = c("black", global_cols[1:3])) +
-    annotate("text", x = 1.65, y = c(.97, .87, .77, .67), label = cox_crude, hjust = 0.5, size = 6) +
-    annotate("text", x = 3.15, y = c(.97, .87, .77, .67), label = cox_adj, hjust = 0.5, size = 6)
+    annotate("text", x = 1.65, y = c(.97, .87, .77, .67), label = cox_crude, hjust = 0.5, size = 6, colour = c("black", global_cols[1:3])) +
+    annotate("text", x = 3.15, y = c(.97, .87, .77, .67), label = cox_adj, hjust = 0.5, size = 6, colour = c("black", global_cols[1:3]))
 
   # n at risk
   table_data <- plot_data %>%

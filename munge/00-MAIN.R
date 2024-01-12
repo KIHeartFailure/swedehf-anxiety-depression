@@ -4,12 +4,12 @@ source(here::here("setup/setup.R"))
 
 # Load data ---------------------------------------------------------------
 
-load(here(shfdbpath, "data/v411/rsdata411.RData"))
+load(here(shfdbpath, "data/v412/rsdata412.RData"))
 
 # Meta data ect -----------------------------------------------------------
 
 metavars <- read.xlsx(here(shfdbpath, "metadata/meta_variables.xlsx"))
-load(here(paste0(shfdbpath, "data/v411/meta_statreport.RData")))
+load(here(paste0(shfdbpath, "data/v412/meta_statreport.RData")))
 
 # Munge data --------------------------------------------------------------
 

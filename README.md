@@ -1,4 +1,4 @@
-# R code for the project Anxiety/depression across the EF spectrum: an analyses from the Swedish Heart Failure registry
+# R code for the project Anxiety/depression across the EF spectrum: an analysis from the Swedish Heart Failure registry
 
 The aim of this R code is to be transparent and document the data handling 
 and statistical analyses performed for the project.

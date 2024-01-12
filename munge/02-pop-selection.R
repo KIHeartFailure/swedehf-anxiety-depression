@@ -8,7 +8,7 @@ flow <- rbind(c("General inclusion/exclusion criteria", ""), flow)
 
 flow <- rbind(flow, c("Project specific inclusion/exclusion criteria", ""))
 
-rsdata <- rsdata411 %>%
+rsdata <- rsdata412 %>%
   filter(shf_indexdtm >= ymd("2008-02-01"))
 flow <- rbind(flow, c("Exclude posts < 2008-02-01 (Anxiety/depression included in the CRF)", nrow(rsdata)))
 
@@ -28,5 +28,5 @@ rsdata <- rsdata %>%
 
 flow <- rbind(flow, c("First post / patient", nrow(rsdata)))
 
-rm(rsdata411)
+rm(rsdata412)
 gc()
