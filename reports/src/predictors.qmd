@@ -96,7 +96,7 @@ p1 <- ggplot(adj %>% filter(anxiety == "Moderate"), aes(x = or, y = var2, color 
   # Add dot plot and error bars
   geom_errorbar(aes(xmin = lci, xmax = uci), width = 0.35, linewidth = 0.3) +
   geom_point(size = 1.5, shape = 15) +
-  scale_color_manual(values = global_cols[c(2, 3, 1)]) +
+  scale_color_manual(values = global_cols[c(1, 2, 3)]) +
   theme_classic() +
   theme(
     text = element_text(size = size_use),
@@ -133,7 +133,7 @@ p2 <- ggplot(adj %>% filter(anxiety == "Severe"), aes(x = or, y = var2, color = 
   # Add dot plot and error bars
   geom_errorbar(aes(xmin = lci, xmax = uci), width = 0.35, linewidth = 0.3) +
   geom_point(size = 1.5, shape = 15) +
-  scale_color_manual(values = global_cols[c(2, 3, 1)]) +
+  scale_color_manual(values = global_cols[c(1, 2, 3)]) +
   theme_classic() +
   theme(
     text = element_text(size = size_use),
@@ -179,8 +179,8 @@ labs <- ggplot(adj %>% filter(anxiety == "Moderate"), aes(x = or, y = var2)) +
     axis.text.x = element_text(color = "white")
   )
 
-pall1 <- t1 + p1 +
-  plot_layout(widths = c(2.3, 5.5)) +
+pall1 <- p1 + t1 +
+  plot_layout(widths = c(5.5, 2.3)) +
   plot_annotation(
     title = "Anxiety/depression Moderate vs None",
     subtitle = "Odds Ratio (95% CI)",
@@ -190,8 +190,8 @@ pall1 <- t1 + p1 +
     )
   )
 
-pall2 <- t2 + p2 +
-  plot_layout(widths = c(2.3, 5.5)) +
+pall2 <- p2 + t2 +
+  plot_layout(widths = c(5.5, 2.3)) +
   plot_annotation(
     title = "Anxiety/depression Severe vs None",
     subtitle = "Odds Ratio (95% CI)",

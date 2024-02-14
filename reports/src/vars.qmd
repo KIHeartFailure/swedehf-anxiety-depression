@@ -2,7 +2,7 @@
 #| label: tbl-vars
 #| cache: true
 #| cache.comments: false
-#| tbl-cap: "Variable definitions and data source"
+#| tbl-cap: "Variable definitions and data sources"
 
 vars <- bind_rows(
   tibble(var = c("shf_anxiety", tabvars)),
@@ -43,7 +43,8 @@ vars <- vars %>%
     # small fixes
     Variable = str_replace_all(Variable, fixed("Disposable income (100 SEK)"), "Income"),
     Variable = str_replace_all(Variable, fixed("First HF hospitalization"), "HF hospitalization"),
-    Variable = str_replace_all(Variable, fixed("First all-cause hospitalization"), "All-cause hospitalization")
+    Variable = str_replace_all(Variable, fixed("First all-cause hospitalization"), "All-cause hospitalization"), 
+    Code = if_else(Variable == "HF hospitalization", str_remove(Code, "\\,4[^.]*$"), Code)
   )
 
 vars <- vars %>%
@@ -88,6 +89,7 @@ vars <- vars %>%
     datasource = case_when(
       Variable == "eGFR" ~ "SwedeHF CKD-EPI 2021 (see reference)",
       Variable == "Anemia" ~ "SwedeHF Female Hb < 120/Male Hb < 130",
+      Variable == "Potassium" ~ "SwedeHF Normakalemia 3.5-5, Hypokalemia <3.5, Hyperkalemia >5",
       Variable == "Non-CV death" ~ "CDR: ICD-10 Not I, J81, K761, G45, R570",
       Variable == "All-cause hospitalization" ~ "NPR",
       TRUE ~ datasource

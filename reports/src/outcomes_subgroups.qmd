@@ -126,7 +126,7 @@ p1 <- ggplot(subplot %>% filter(anxiety == "Moderate"), aes(x = hr, y = order, c
   # Add dot plot and error bars
   geom_errorbar(aes(xmin = lci, xmax = uci), width = 0.6, linewidth = 0.3) +
   geom_point(size = 1.7, shape = 15) +
-  scale_color_manual(values = global_cols[c(2, 3, 1)]) +
+  scale_color_manual(values = global_cols[c(1, 2, 3)]) +
   theme_classic() +
   theme(
     text = element_text(size = size_use),
@@ -163,7 +163,7 @@ p2 <- ggplot(subplot %>% filter(anxiety == "Severe"), aes(x = hr, y = order, col
   # Add dot plot and error bars
   geom_errorbar(aes(xmin = lci, xmax = uci), width = 0.6, linewidth = 0.3) +
   geom_point(size = 1.7, shape = 15) +
-  scale_color_manual(values = global_cols[c(2, 3, 1)]) +
+  scale_color_manual(values = global_cols[c(1, 2, 3)]) +
   theme_classic() +
   theme(
     text = element_text(size = size_use),
@@ -230,8 +230,8 @@ labs <- ggplot(subplot %>% filter(anxiety == "Moderate"), aes(x = hr, y = order)
     labels = subplot %>% filter(anxiety == "Moderate") %>% pull(Variable)
   )
 
-pall1 <- t1 + p1 +
-  plot_layout(widths = c(2.2, 3.5)) +
+pall1 <- p1 + t1 +
+  plot_layout(widths = c(3.7, 2.2)) +
   plot_annotation(
     title = "Anxiety/depression Moderate vs None",
     subtitle = "Hazard Ratio (95% CI)",
@@ -241,8 +241,8 @@ pall1 <- t1 + p1 +
     )
   )
 
-pall2 <- t2 + p2 +
-  plot_layout(widths = c(2.2, 3.5)) +
+pall2 <- p2 + t2 +
+  plot_layout(widths = c(3.7, 2.2)) +
   plot_annotation(
     title = "Anxiety/depression Severe vs None",
     subtitle = "Hazard Ratio (95% CI)",
@@ -272,8 +272,8 @@ pint <- pint +
     )
   )
 
-pall <- wrap_elements(labs, clip = F) + wrap_elements(pall1, clip = F) + wrap_elements(pall2, clip = F) + wrap_elements(pint, clip = F) +
-  plot_layout(nrow = 1, widths = c(2.3, 4.2, 4.2, 2))
+pall <- wrap_elements(labs) + wrap_elements(pall1) + wrap_elements(pall2) + wrap_elements(pint) +
+  plot_layout(nrow = 1, widths = c(2, 4.6, 4.6, 1.5))
 
 create_pptx(pall, width = 10, height = 8)
 pall

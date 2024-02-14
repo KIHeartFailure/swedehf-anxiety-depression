@@ -77,7 +77,7 @@ clinical diagnosis of HF, which was thereafter defined according to the ICD-10
 codes I50.0, I50.1, I50.9, I42.0, I42.6, I42.7, I25.5, I11.0, I13.0, I13.2. 
 In 2021, 69 of 76 Swedish hospitals enrolled patients in SwedeHF, which had a 32% coverage of the prevalent HF population in Sweden[@annualreport]. 
 
-SwedeHF was linked with national Swedish registries (SHFDB v 4.1.1) through the 
+SwedeHF was linked with national Swedish registries (SHFDB v 4.1.2) through the 
 Swedish personal identity number (PIN)[@pin]: 
 
 - The National Patient Register (The National Board of Health and Welfare) for 
@@ -105,7 +105,7 @@ Individual consent was not required, but patients were informed of entry into Sw
 #| label: tbl-flow
 #| tbl-cap: Information for flowchart
 default_kable(flow) %>%
-  row_spec(c(1, 12), bold = T)
+  row_spec(c(1, 11), bold = T)
 ```
 
 First patient in: `r min(rsdata$shf_indexdtm)` and last patient in: `r max(rsdata$shf_indexdtm)`.  
@@ -122,6 +122,10 @@ Information on data sources, definitions etc. are found https://kiheartfailure.g
 2. Moderate = "Jag är orolig eller nedstämd i viss utsträckning"
 3. Severe = "Jag är i högsta grad orolig eller nedstämd"
 
+### EF
+
+EF subgroups are defined as HFrEF (LVEF <40%), HFrEF (LVEF 40-49%) and HFpEF (LVEF $\geq$ 50%).
+
 # Statistical analysis 
 
 ## General
@@ -134,9 +138,11 @@ TO DO: Skicka projektansökan till swedehf styrgrupp. Slå ihop med QoL projekan
 
 ## Missing data
 
-Missing data was imputed with multiple imputation (n = 10) using mice [@mice] and Rubin’s rules was used for combining estimates and standard errors across imputed data sets. 
-Variables included in the model are indicated in @tbl-base. 
-All-cause death was included as the Nelson-Aalen estimator.
+Missing data was imputed with multiple imputation (n = 10) using mice [@mice] 
+and Rubin’s rules was used for combining estimates and standard errors across imputed data sets. 
+Variables included in the model are indicated in @tbl-base. Anxiety/depression was not included in the model. 
+The primary outcome, `r outvars$name[1]`, was included as the Nelson-Aalen estimator 
+in the model but itself not imputed since it contained no missing values.
 
 ## Baseline characteristics
 
@@ -148,7 +154,7 @@ differences between groups with the Kruskal-Wallis test.
 
 Separate analyses were further performed for the respective EF groups. 
 
-FRÅGA: Kolla noga igenom variabler i tabell och vilka som ska justeras för i modeller. 
+FRÅGA: Kolla noga igenom variabler i tabell, ska några läggas till? Kontrollera även regressions variabler, lägga till? Ta bort?
 
 ## Independent associations between baseline characteristics and anxiety/depression
 
@@ -183,17 +189,21 @@ As a consistency analysis for the secondary outcomes, a sub-distributional hazar
 where deaths not defined as an event were treated as competing events.
 
 Data were censored at `r global_followup_years` years follow-up, 2021-12-31 or emigration from Sweden. 
+In the Cox proportional hazard regression censoring was also performed at death from other causes than the event. 
 
 Separate analyses were further performed for the respective EF groups. 
 
-FRÅGA: SKA KLIPPA VID 5 ÅR?
+FRÅGA: SKA KLIPPA TID VID 5 ÅR?  1ÅR? 10 år? Aldrig? 
+
+Fråga: Är val av utfall OK?
 
 ### Association between outcomes and anxiety/depression - Subgroups
 
 Associations across pre-specified subgroups were evaluated using an interaction term between anxiety/depression and the 
 respective variable for the primary outcome and presented in a Forest plot. 
 
-FRÅGA: FUNDERA PÅ ATT EV TA BORT utfallstab uppdelat på EF. Finns i Subgrupps forestplot. note to self: ändra då KM fig så tas från itneraktionsmodell och inte subgrupper. 
+FRÅGA: Ska göras för alla utfall eller räcker med primärt utfall?
+FRÅGA: Om alla utfall, FUNDERA PÅ ATT EV TA BORT utfallstab uppdelat på EF. Finns i Subgrupps forestplot. note to self: ändra då KM fig så tas från interaktionsmodell och inte subgrupper. 
 
 ### Assumptions
 

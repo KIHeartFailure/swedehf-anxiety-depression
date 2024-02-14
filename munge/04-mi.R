@@ -18,7 +18,7 @@ pred[noimpvars, ] <- 0 # redundant
 
 # change method used in imputation to prop odds model
 meth <- ini$method
-meth[c("scb_education", "shf_indexyear_cat", "shf_ntprobnp_cat", "scb_dispincome_cat")] <- "polr"
+meth[c("scb_education", "shf_indexyear_cat", "shf_ntprobnp_cat", "scb_dispincome_cat", "shf_age_cat")] <- "polr"
 meth[noimpvars] <- ""
 
 ## check no cores

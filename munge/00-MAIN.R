@@ -40,7 +40,7 @@ save(
 # create workbook to write tables to Excel
 wb <- openxlsx::createWorkbook()
 openxlsx::addWorksheet(wb, sheet = "Information")
-openxlsx::writeData(wb, sheet = "Information", x = "Tables in xlsx format for tables in Statistical report: Anxiety/depression across the EF spectrum: an analyses from the Swedish Heart Failure registry", rowNames = FALSE, keepNA = FALSE)
+openxlsx::writeData(wb, sheet = "Information", x = "Tables in xlsx format for tables in Statistical report: Anxiety/depression across the EF spectrum: an analysis from the Swedish Heart Failure Registry", rowNames = FALSE, keepNA = FALSE)
 openxlsx::saveWorkbook(wb,
   file = here::here("output/tabs/tables.xlsx"),
   overwrite = TRUE

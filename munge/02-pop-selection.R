@@ -1,6 +1,6 @@
 # Inclusion/exclusion criteria --------------------------------------------------------
 
-flow <- flow[1:10, 1:2]
+flow <- flow[c(1:8, 10), 1:2]
 
 names(flow) <- c("Criteria", "N")
 
@@ -10,7 +10,7 @@ flow <- rbind(flow, c("Project specific inclusion/exclusion criteria", ""))
 
 rsdata <- rsdata412 %>%
   filter(shf_indexdtm >= ymd("2008-02-01"))
-flow <- rbind(flow, c("Exclude posts < 2008-02-01 (Anxiety/depression included in the CRF)", nrow(rsdata)))
+flow <- rbind(flow, c("Include posts >= 2008-02-01 (Anxiety/depression included in the CRF)", nrow(rsdata)))
 
 rsdata <- rsdata %>%
   filter(!is.na(shf_anxiety))

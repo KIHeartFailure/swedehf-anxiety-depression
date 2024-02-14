@@ -17,7 +17,7 @@ figdata <- rsdata %>%
 
 p <- ggplot(figdata, aes(x = shf_ef_cat, y = p, fill = shf_anxiety)) +
   geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_brewer(palette = "Dark2") +
+  scale_fill_manual(values = global_cols[3:1]) +
   scale_y_continuous(limits = c(0, 100)) +
   theme_classic() +
   theme(
