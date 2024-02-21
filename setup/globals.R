@@ -13,5 +13,5 @@ datadate <- "20220908"
 
 global_cols <- RColorBrewer::brewer.pal(7, "Set1")
 
-global_followup_years <- 5
-global_followup <- 5 * 365.25
+global_followup_months <- 12
+global_followup <- 366

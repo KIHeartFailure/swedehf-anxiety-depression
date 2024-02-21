@@ -8,8 +8,8 @@ modvars_crr <- vars_crr[str_detect(vars_crr, paste0(paste0(modvars, "_cr_"), col
 coxvars <- modvars
 coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
 
-outcomesfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventname, xvar = "shf_anxiety",
-                         fg = T, novar = NULL) {
+outcomesfunc_inner <- function(data = rsdata, impdata = imprsdata, time, event, eventname, xvar = "shf_anxiety",
+                               fg = T, novar = NULL) {
   levs <- levels(data %>% pull(!!sym(xvar)))
   nlevs <- length(levs)
 
@@ -20,7 +20,7 @@ outcomesfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventn
   out[1, 1] <- eventname
 
   ## incidence rate
-  out[1, 2] <- "No events, sum py, events/100py (95% CI)"
+  out[1, 2] <- "No events, sum py, incidence/100py (95% CI)"
 
   # 1 row - incidence
   ev <- data %>%
@@ -47,7 +47,7 @@ outcomesfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventn
   ))
 
   out[2, 3:5] <- c(
-    "ref",
+    "reference",
     paste0(
       fn(mod$conf.int[, "exp(coef)"], dig = 2),
       " (", fn(mod$conf.int[, "lower .95"], dig = 2),
@@ -64,7 +64,7 @@ outcomesfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventn
   ))))))
 
   out[3, 3:5] <- c(
-    "ref",
+    "reference",
     paste0(
       fn(exp(mod$estimate[1:(nlevs - 1)]), dig = 2),
       " (", fn(exp(mod$estimate[1:(nlevs - 1)] - global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2),
@@ -82,9 +82,9 @@ outcomesfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventn
     #   failcode = 1,
     #   cencode = 0
     # ))
-    # 
+    #
     # out[4, 3:5] <- c(
-    #   "ref",
+    #   "reference",
     #   paste0(
     #     fn(mod$coef[, "exp(coef)"], dig = 2),
     #     " (",
@@ -96,12 +96,17 @@ outcomesfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventn
     # )
 
     out[5, 2] <- "Adjusted Sub-distributional Hazard Ratio (95% CI), p-value"
-    # modvars_crr2 <- c(vars_crr[str_detect(vars_crr, paste0(xvar, "_cr_"))], modvars_crr)
+    if (!is.null(novar)) {
+      modvars_crr2 <- modvars_crr[!str_detect(modvars_crr, novar)]
+    } else {
+      modvars_crr2 <- modvars_crr
+    }
+    modvars_crr2 <- c(vars_crr[str_detect(vars_crr, paste0(xvar, "_cr_"))], modvars_crr2)
     #  mod <- crr_mids(time, event = paste0(event, "_cr"), xvars = modvars_crr2, impdata)
     #  mod <- summary(pool(mod))
 
     # out[5, 3:5] <- c(
-    #    "ref",
+    #    "reference",
     #   paste0(
     #      fn(exp(mod$estimate[1:(nlevs - 1)]), dig = 2),
     #      " (", fn(exp(mod$estimate[1:(nlevs - 1)] - global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2),
@@ -112,6 +117,55 @@ outcomesfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventn
   }
   return(out)
 }
+
+outcomesfunc <- function(data, impdata, novar, fgall = T) {
+  out1 <- outcomesfunc_inner(
+    data = data,
+    impdata = impdata,
+    time = outvars$time[1],
+    event = outvars$var[1],
+    eventname = outvars$name[1],
+    fg = F,
+    novar = novar
+  )
+  out2 <- outcomesfunc_inner(
+    data = data,
+    impdata = impdata,
+    time = outvars$time[2],
+    event = outvars$var[2],
+    eventname = outvars$name[2],
+    novar = novar,
+    fg = fgall
+  )
+  out3 <- outcomesfunc_inner(
+    data = data,
+    impdata = impdata,
+    time = outvars$time[3],
+    event = outvars$var[3],
+    eventname = outvars$name[3],
+    novar = novar,
+    fg = fgall
+  )
+  out4 <- outcomesfunc_inner(
+    data = data,
+    impdata = impdata,
+    time = outvars$time[4],
+    event = outvars$var[4],
+    eventname = outvars$name[4],
+    novar = novar,
+    fg = fgall
+  )
+  outall <- rbind(out1, out2, out3, out4)
+
+  make_one_xlsxsheet(outall)
+
+  default_kable(outall) %>%
+    add_header_above(c(" " = 1, " " = 1, "Anxiety/depression" = 3)) %>%
+    footnote(
+      general_title = "",
+      general = "Abbreviations: py: person-years; CI: Confidence interval"
+    )
+}
 ```
 
 ```{r}
@@ -121,33 +175,7 @@ outcomesfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventn
 #| dependson: outcomesfunc
 #| tbl-cap: "Association between outcomes and anxiety/depression"
 
-out1 <- outcomesfunc(
-  time = outvars$time[1],
-  event = outvars$var[1],
-  eventname = outvars$name[1],
-  fg = F
-)
-out2 <- outcomesfunc(
-  time = outvars$time[2],
-  event = outvars$var[2],
-  eventname = outvars$name[2],
-)
-out3 <- outcomesfunc(
-  time = outvars$time[3],
-  event = outvars$var[3],
-  eventname = outvars$name[3],
-)
-out4 <- outcomesfunc(
-  time = outvars$time[4],
-  event = outvars$var[4],
-  eventname = outvars$name[4],
-)
-outall <- rbind(out1, out2, out3, out4)
-
-make_one_xlsxsheet(outall)
-
-default_kable(outall) %>%
-  add_header_above(c(" " = 1, " " = 1, "Anxiety/depression" = 3))
+outcomesfunc(data = rsdata, impdata = imprsdata, novar = NULL)
 ```
 
 ```{r}
@@ -157,47 +185,9 @@ default_kable(outall) %>%
 #| dependson: outcomesfunc
 #| tbl-cap: "Association between outcomes and anxiety/depression - HFrEF"
 
-impdataref <- miceadds::subset_datlist(imprsdata, expr_subset = rsdata$shf_ef_cat == "HFrEF")
+impdataref <- mice::filter(imprsdata, rsdata %>% pull(shf_ef_cat) == "HFrEF")
 
-out1 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFrEF"),
-  impdata = impdataref,
-  time = outvars$time[1],
-  event = outvars$var[1],
-  eventname = outvars$name[1],
-  fg = F,
-  novar = "shf_ef_cat"
-)
-out2 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFrEF"),
-  impdata = impdataref,
-  time = outvars$time[2],
-  event = outvars$var[2],
-  eventname = outvars$name[2],
-  novar = "shf_ef_cat"
-)
-out3 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFrEF"),
-  impdata = impdataref,
-  time = outvars$time[3],
-  event = outvars$var[3],
-  eventname = outvars$name[3],
-  novar = "shf_ef_cat"
-)
-out4 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFrEF"),
-  impdata = impdataref,
-  time = outvars$time[4],
-  event = outvars$var[4],
-  eventname = outvars$name[4],
-  novar = "shf_ef_cat"
-)
-outall <- rbind(out1, out2, out3, out4)
-
-make_one_xlsxsheet(outall)
-
-default_kable(outall) %>%
-  add_header_above(c(" " = 1, " " = 1, "Anxiety/depression" = 3))
+outcomesfunc(data = rsdata %>% filter(shf_ef_cat == "HFrEF"), impdata = impdataref, novar = "shf_ef_cat", fgall = F)
 ```
 
 ```{r}
@@ -207,47 +197,9 @@ default_kable(outall) %>%
 #| dependson: outcomesfunc
 #| tbl-cap: "Association between outcomes and anxiety/depression - HFmrEF"
 
-impdatamref <- miceadds::subset_datlist(imprsdata, expr_subset = rsdata$shf_ef_cat == "HFmrEF")
+impdatamref <- mice::filter(imprsdata, rsdata %>% pull(shf_ef_cat) == "HFmrEF")
 
-out1 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFmrEF"),
-  impdata = impdatamref,
-  time = outvars$time[1],
-  event = outvars$var[1],
-  eventname = outvars$name[1],
-  fg = F,
-  novar = "shf_ef_cat"
-)
-out2 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFmrEF"),
-  impdata = impdatamref,
-  time = outvars$time[2],
-  event = outvars$var[2],
-  eventname = outvars$name[2],
-  novar = "shf_ef_cat"
-)
-out3 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFmrEF"),
-  impdata = impdatamref,
-  time = outvars$time[3],
-  event = outvars$var[3],
-  eventname = outvars$name[3],
-  novar = "shf_ef_cat"
-)
-out4 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFmrEF"),
-  impdata = impdatamref,
-  time = outvars$time[4],
-  event = outvars$var[4],
-  eventname = outvars$name[4],
-  novar = "shf_ef_cat"
-)
-outall <- rbind(out1, out2, out3, out4)
-
-make_one_xlsxsheet(outall)
-
-default_kable(outall) %>%
-  add_header_above(c(" " = 1, " " = 1, "Anxiety/depression" = 3))
+outcomesfunc(data = rsdata %>% filter(shf_ef_cat == "HFmrEF"), impdata = impdatamref, novar = "shf_ef_cat", fgall = F)
 ```
 
 ```{r}
@@ -257,45 +209,31 @@ default_kable(outall) %>%
 #| dependson: outcomesfunc
 #| tbl-cap: "Association between outcomes and anxiety/depression - HFpEF"
 
-impdatapef <- miceadds::subset_datlist(imprsdata, expr_subset = rsdata$shf_ef_cat == "HFpEF")
+impdatapef <- mice::filter(imprsdata, rsdata %>% pull(shf_ef_cat) == "HFpEF")
 
-out1 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFpEF"),
-  impdata = impdatapef,
-  time = outvars$time[1],
-  event = outvars$var[1],
-  eventname = outvars$name[1],
-  fg = F,
-  novar = "shf_ef_cat"
-)
-out2 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFpEF"),
-  impdata = impdatapef,
-  time = outvars$time[2],
-  event = outvars$var[2],
-  eventname = outvars$name[2],
-  novar = "shf_ef_cat"
-)
-out3 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFpEF"),
-  impdata = impdatapef,
-  time = outvars$time[3],
-  event = outvars$var[3],
-  eventname = outvars$name[3],
-  novar = "shf_ef_cat"
-)
-out4 <- outcomesfunc(
-  data = rsdata %>% filter(shf_ef_cat == "HFpEF"),
-  impdata = impdatapef,
-  time = outvars$time[4],
-  event = outvars$var[4],
-  eventname = outvars$name[4],
-  novar = "shf_ef_cat"
-)
-outall <- rbind(out1, out2, out3, out4)
+outcomesfunc(data = rsdata %>% filter(shf_ef_cat == "HFpEF"), impdata = impdatapef, novar = "shf_ef_cat", fgall = F)
+```
 
-make_one_xlsxsheet(outall)
+```{r}
+#| label: tbl-outcomes-out
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfunc
+#| tbl-cap: "Association between outcomes and anxiety/depression - Out-patient"
 
-default_kable(outall) %>%
-  add_header_above(c(" " = 1, " " = 1, "Anxiety/depression" = 3))
+impdataout <- mice::filter(imprsdata, rsdata %>% pull(shf_location) == "Out-patient")
+
+outcomesfunc(data = rsdata %>% filter(shf_location == "Out-patient"), impdata = impdataout, novar = "shf_location", fgall = F)
+```
+
+```{r}
+#| label: tbl-outcomes-in
+#| cache: true
+#| cache.comments: false
+#| dependson: outcomesfunc
+#| tbl-cap: "Association between outcomes and anxiety/depression - In-patient"
+
+impdatain <- mice::filter(imprsdata, rsdata %>% pull(shf_location) == "In-patient")
+
+outcomesfunc(data = rsdata %>% filter(shf_location == "In-patient"), impdata = impdatain, novar = "shf_location", fgall = F)
 ```

@@ -42,9 +42,9 @@ vars <- vars %>%
     Variable = coalesce(name, label, var_tmp),
     # small fixes
     Variable = str_replace_all(Variable, fixed("Disposable income (100 SEK)"), "Income"),
-    Variable = str_replace_all(Variable, fixed("First HF hospitalization"), "HF hospitalization"),
-    Variable = str_replace_all(Variable, fixed("First all-cause hospitalization"), "All-cause hospitalization"), 
-    Code = if_else(Variable == "HF hospitalization", str_remove(Code, "\\,4[^.]*$"), Code)
+    Variable = str_replace_all(Variable, fixed("First heart failure hospitalization"), "Heart failure hospitalization"),
+    Variable = str_replace_all(Variable, fixed("First all-cause hospitalization"), "All-cause hospitalization"),
+    Code = if_else(Variable == "Heart failure hospitalization", str_remove(Code, "\\,4[^.]*$"), Code)
   )
 
 vars <- vars %>%
@@ -80,8 +80,8 @@ vars <- vars %>%
       !Variable %in% c("Charlson Comorbidity Index"),
     footnote_marker_alphabet(1, format = "latex"), ""
     ),
-    footnote2 = if_else(str_detect(var, "hosp"), footnote_marker_alphabet(2, format = "latex"), ""),
-    footnote3 = if_else(str_detect(var, "death"), footnote_marker_alphabet(3, format = "latex"), ""),
+    footnote2 = if_else(str_detect(var, "hosp") & str_detect(Variable, "All-cause", negate = T), footnote_marker_alphabet(2, format = "latex"), ""),
+    footnote3 = if_else(str_detect(var, "death") & str_detect(Variable, "All-cause", negate = T), footnote_marker_alphabet(3, format = "latex"), ""),
     footnote4 = if_else(Variable == "Charlson Comorbidity Index", footnote_marker_alphabet(4, format = "latex"), ""),
   ) %>%
   unite(datasource, starts_with("data"), sep = "; ", na.rm = TRUE) %>%
@@ -90,7 +90,6 @@ vars <- vars %>%
       Variable == "eGFR" ~ "SwedeHF CKD-EPI 2021 (see reference)",
       Variable == "Anemia" ~ "SwedeHF Female Hb < 120/Male Hb < 130",
       Variable == "Potassium" ~ "SwedeHF Normakalemia 3.5-5, Hypokalemia <3.5, Hyperkalemia >5",
-      Variable == "Non-CV death" ~ "CDR: ICD-10 Not I, J81, K761, G45, R570",
       Variable == "All-cause hospitalization" ~ "NPR",
       TRUE ~ datasource
     )

@@ -77,7 +77,7 @@ clinical diagnosis of HF, which was thereafter defined according to the ICD-10
 codes I50.0, I50.1, I50.9, I42.0, I42.6, I42.7, I25.5, I11.0, I13.0, I13.2. 
 In 2021, 69 of 76 Swedish hospitals enrolled patients in SwedeHF, which had a 32% coverage of the prevalent HF population in Sweden[@annualreport]. 
 
-SwedeHF was linked with national Swedish registries (SHFDB v 4.1.2) through the 
+SwedeHF was linked with national Swedish registries (SHFDB version 4.1.2) through the 
 Swedish personal identity number (PIN)[@pin]: 
 
 - The National Patient Register (The National Board of Health and Welfare) for 
@@ -134,8 +134,6 @@ All analyses were performed using `r sessionInfo()$R.version$version.string` [@r
 The level of significance is set to 5%, two-sided. No adjustment for multiple 
 comparisons were made and therefore the results should be viewed with care.
 
-TO DO: Skicka projektansökan till swedehf styrgrupp. Slå ihop med QoL projekansökan?
-
 ## Missing data
 
 Missing data was imputed with multiple imputation (n = 10) using mice [@mice] 
@@ -152,18 +150,12 @@ differences between groups with the chi-square test.
 Continuous variables are presented with median [first quartile-third quartile] and tested for 
 differences between groups with the Kruskal-Wallis test. 
 
-Separate analyses were further performed for the respective EF groups. 
-
-FRÅGA: Kolla noga igenom variabler i tabell, ska några läggas till? Kontrollera även regressions variabler, lägga till? Ta bort?
+Separate analyses were further performed for the respective EF groups and in/out-patients. 
 
 ## Independent associations between baseline characteristics and anxiety/depression
 
 The association between baseline characteristics and anxiety/depression was evaluated using a multivariable multinominal regression 
 including the variables indicated in @tbl-base (all shown in @fig-predictors). The variables were selected based on clinical relevance. 
-
-FRÅGA: Ska out of breath mm (övriga qol variabler) justeras för???? Mycket samvariation antar jag (detta är ju också känslofrågor, så om man är deprimerad uppfattar man ju att man är sämre gällande andfåddhet, och sämre andfåddhet gör ju att man blir deppad). 
-
-FRÅGA: Ska detta göras uppdelat på EF (så associationer mellan anxiety/depression och baseline char INOM respektive EF grupp)? 
 
 ### Assumptions
 
@@ -179,7 +171,7 @@ The following outcomes are considered:
 - `r paste0(outvars$name[3], " (", outvars$shortname[3], ")")`
 - `r paste0(outvars$name[4], " (", outvars$shortname[4], ")")`
 
-Time to first events were presented with cumulative incidence curves by anxiety/depression. Separate figures were also performed for the respective EF groups. 
+Time to first events were presented with cumulative incidence curves by anxiety/depression. Separate figures were also performed for the respective EF groups and in/out-patients. 
 
 Crude and adjusted analyses were performed where adjustment was performed for 
 variables indicated in @tbl-base. 
@@ -188,22 +180,10 @@ Cox proportional hazards regressions were used to model the time to first event.
 As a consistency analysis for the secondary outcomes, a sub-distributional hazards model[@fg] was used, 
 where deaths not defined as an event were treated as competing events.
 
-Data were censored at `r global_followup_years` years follow-up, 2021-12-31 or emigration from Sweden. 
+Data were censored at `r global_followup_months` months follow-up, 2021-12-31 or emigration from Sweden. 
 In the Cox proportional hazard regression censoring was also performed at death from other causes than the event. 
 
-Separate analyses were further performed for the respective EF groups. 
-
-FRÅGA: SKA KLIPPA TID VID 5 ÅR?  1ÅR? 10 år? Aldrig? 
-
-Fråga: Är val av utfall OK?
-
-### Association between outcomes and anxiety/depression - Subgroups
-
-Associations across pre-specified subgroups were evaluated using an interaction term between anxiety/depression and the 
-respective variable for the primary outcome and presented in a Forest plot. 
-
-FRÅGA: Ska göras för alla utfall eller räcker med primärt utfall?
-FRÅGA: Om alla utfall, FUNDERA PÅ ATT EV TA BORT utfallstab uppdelat på EF. Finns i Subgrupps forestplot. note to self: ändra då KM fig så tas från interaktionsmodell och inte subgrupper. 
+Separate analyses were further performed for the respective EF groups and in/out-patients. 
 
 ### Assumptions
 
@@ -247,15 +227,15 @@ The median (q1-q3) age is `r med` and `r percfem`% females.
 ```{r}
 medsurv <- rsdata %>%
   summarise(
-    med = fn(median(sos_outtime_death / 365.25) * 12, dig = 0),
-    min = fn(min(sos_outtime_death / 365.25) * 12, dig = 0),
-    max = fn(max(sos_outtime_death / 365.25) * 12, dig = 0)
+    med = fn(median(sos_outtime_death / 30.5), dig = 0),
+    min = fn(min(sos_outtime_death / 30.5), dig = 0),
+    max = fn(max(sos_outtime_death / 30.5), dig = 0)
   ) %>%
   mutate(out = paste0(med, " (", min, "-", max, ")")) %>%
   pull(out)
 
 sumsurv <- rsdata %>%
-  summarise(sumpy = fn(sum(sos_outtime_death) / 365.25, dig = 0)) %>%
+  summarise(sumpy = fn(sum(sos_outtime_death) / 30.5, dig = 0)) %>%
   pull(sumpy)
 ```
 
@@ -267,12 +247,6 @@ The median (min-max) follow-up is
 \clearpage
 
 {{< include src/km_figs.qmd >}}
-
-\clearpage
-
-### Association between outcomes and anxiety/depression - Subgroups
-
-{{< include src/outcomes_subgroups.qmd >}}
 
 \clearpage
 

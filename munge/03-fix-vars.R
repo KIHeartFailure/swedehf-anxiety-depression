@@ -10,10 +10,30 @@ rsdata <- rsdata %>%
     censdtm = pmin(shf_indexdtm + global_followup, censdtm),
     shf_anxiety = factor(shf_anxiety, levels = c("None", "Moderate", "Severe")),
     shf_indexyear_cat = factor(case_when(
-      shf_indexyear <= 2015 ~ "2008-2015",
-      shf_indexyear <= 2018 ~ "2016-2018",
-      shf_indexyear <= 2021 ~ "2019-2021"
+      shf_indexyear <= 2010 ~ "2000-2010",
+      shf_indexyear <= 2015 ~ "2011-2015",
+      shf_indexyear <= 2021 ~ "2016-2021"
     )),
+    shf_bpsys_cat = factor(
+      case_when(
+        shf_bpsys < 140 ~ 1,
+        shf_bpsys >= 140 ~ 2
+      ),
+      levels = 1:2, labels = c("<140", ">=140")
+    ),
+    shf_qol_cat = forcats::fct_rev(shf_qol_cat),
+    shf_age_cat = factor(case_when(
+      shf_age <= 75 ~ 0,
+      shf_age > 75 ~ 1
+    ), levels = 0:1, labels = c("<=75", ">75")),
+    scb_education = factor(
+      case_when(
+        is.na(scb_education) ~ NA_real_,
+        scb_education %in% c("Compulsory school", "Secondary school") ~ 1,
+        scb_education %in% c("University") ~ 2
+      ),
+      levels = 1:2, labels = c("Compulsory/secondary school", "University")
+    ),
     # comp risk outcomes
     sos_out_deathcv_cr = create_crevent(sos_out_deathcv, sos_out_death, eventvalues = c("Yes", "Yes")),
     sos_out_hosphf_cr = create_crevent(sos_out_hosphf, sos_out_death, eventvalues = c("Yes", "Yes")),
@@ -26,7 +46,7 @@ rsdata <- create_crvar(rsdata, "shf_anxiety")
 # income
 inc <- rsdata %>%
   reframe(incsum = list(enframe(quantile(scb_dispincome,
-    probs = c(0.33, 0.66),
+    probs = c(0.50),
     na.rm = TRUE
   ))), .by = shf_indexyear) %>%
   unnest(cols = c(incsum)) %>%
@@ -40,38 +60,41 @@ rsdata <- left_join(
   mutate(
     scb_dispincome_cat = factor(
       case_when(
-        scb_dispincome < `33%` ~ 1,
-        scb_dispincome < `66%` ~ 2,
-        scb_dispincome >= `66%` ~ 3
+        scb_dispincome < `50%` ~ 1,
+        scb_dispincome >= `50%` ~ 2
       ),
-      levels = 1:3,
-      labels = c("1st tertile within year", "2nd tertile within year", "3rd tertile within year")
+      levels = 1:2,
+      labels = c("<median within year", ">=median within year")
     )
   ) %>%
-  select(-`33%`, -`66%`)
+  select(-`50%`)
 
 # ntprobnp
 
 nt <- rsdata %>%
   reframe(ntmed = list(enframe(quantile(shf_ntprobnp,
-    probs = c(0.33, 0.66),
+    probs = c(0.50),
     na.rm = TRUE
-  )))) %>%
+  ))), .by = shf_ef_cat) %>%
   unnest(cols = c(ntmed)) %>%
   pivot_wider(names_from = name, values_from = value)
 
-rsdata <- rsdata %>%
+rsdata <- left_join(
+  rsdata,
+  nt,
+  by = "shf_ef_cat"
+) %>%
   mutate(
     shf_ntprobnp_cat = factor(
       case_when(
-        shf_ntprobnp < nt$`33%` ~ 1,
-        shf_ntprobnp < nt$`66%` ~ 2,
-        shf_ntprobnp >= nt$`66%` ~ 3
+        shf_ntprobnp < `50%` ~ 1,
+        shf_ntprobnp >= `50%` ~ 2
       ),
-      levels = 1:3,
-      labels = c("1st tertile", "2nd tertile", "3rd tertile")
+      levels = 1:2,
+      labels = c("<median within EF", ">=median within EF")
     )
-  )
+  ) %>%
+  select(-`50%`)
 
 rsdata <- rsdata %>%
   mutate(across(where(is_character), factor))

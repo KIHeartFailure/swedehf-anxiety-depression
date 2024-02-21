@@ -23,7 +23,6 @@ library(tableone)
 
 # plots
 library(ggplot2)
-library(gridExtra)
 library(ggrepel)
 library(patchwork)
 library(scales)

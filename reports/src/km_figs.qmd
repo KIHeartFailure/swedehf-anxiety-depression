@@ -8,7 +8,7 @@ coxvars <- modvars
 coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
 
 kmfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventname, novar = NULL,
-                   labposadj = c(0.18, -0.1), textadjy = 0.97, textadjx = .5) {
+                   labposadj = c(0.18, -0.1), textadjy = 0.97, textadjx = 0) {
   levs <- levels(data %>% pull(shf_anxiety))
   nlevs <- length(levs)
 
@@ -19,7 +19,7 @@ kmfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventname, n
 
   cox_crude <- c(
     "Crude HR (95% CI)",
-    "ref",
+    "reference",
     paste0(
       fn(mod$conf.int[, "exp(coef)"], dig = 2),
       " (", fn(mod$conf.int[, "lower .95"], dig = 2),
@@ -33,8 +33,8 @@ kmfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventname, n
   ))))))
 
   cox_adj <- c(
-    "Adjusted HR (95% CI)",
-    "ref",
+    "Adj HR (95% CI)",
+    "reference",
     paste0(
       fn(exp(mod$estimate[1:(nlevs - 1)]), dig = 2),
       " (", fn(exp(mod$estimate[1:(nlevs - 1)] - global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2),
@@ -62,47 +62,59 @@ kmfunc <- function(data = rsdata, impdata = imprsdata, time, event, eventname, n
   ylim <- c(0, 1)
   ylab <- paste0(eventname, " (%)")
 
-  p <- ggplot(plot_data, aes(x = time / 365, y = estimate, color = strata)) +
+  p <- ggplot(plot_data, aes(x = time / 30.5, y = estimate, color = strata)) +
     geom_step(aes(linetype = strata), linewidth = 1) +
-    scale_color_manual(values = global_cols[1:3]) +
+    scale_color_manual(values = c(global_cols[1:3])) +
     # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
     # scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = c(0, 1), expand = c(0, 0)) +
-    scale_x_continuous(breaks = seq(0, global_followup_years, 1), limits = c(0, global_followup_years)) +
+    scale_x_continuous(breaks = seq(0, global_followup_months, 1), limits = c(0, global_followup_months)) +
     scale_y_continuous(labels = scales::label_percent(suffix = ""), limits = ylim) +
     theme_classic() +
     theme(
-      text = element_text(size = 20),
-      legend.position = "none"
+      text = element_text(size = 20, face = "bold"),
+      legend.position = "none",
+      axis.text = element_text(color = "black"),
     ) +
-    labs(x = "Follow-up (years)", y = ylab) +
-    annotate("text", x = textadjx, y = c(textadjy, textadjy-0.1, textadjy-0.2, textadjy-0.3), label = c("", levs), hjust = 0, size = 6, colour = c("black", global_cols[3:1])) +
-    annotate("text", x = textadjx + 1.65, y = c(textadjy, textadjy-0.1, textadjy-0.2, textadjy-0.3), label = cox_crude, hjust = 0.5, size = 6, colour = c("black", global_cols[3:1])) +
-    annotate("text", x = textadjx + 3.15, y = c(textadjy, textadjy-0.1, textadjy-0.2, textadjy-0.3), label = cox_adj, hjust = 0.5, size = 6, colour = c("black", global_cols[3:1]))
+    labs(x = "Follow-up (months)", y = ylab) +
+    annotate("text",
+      x = textadjx, y = c(textadjy, textadjy - 0.1, textadjy - 0.2, textadjy - 0.3), label = c("", levs),
+      hjust = 0, size = 6, fontface = "bold", colour = c("black", global_cols[3:1])
+    ) +
+    annotate("text",
+      x = textadjx + 3.2, y = c(textadjy, textadjy - 0.1, textadjy - 0.2, textadjy - 0.3), label = cox_crude,
+      hjust = 0.5, size = 6, fontface = "bold", colour = c("black", global_cols[3:1])
+    ) +
+    annotate("text",
+      x = textadjx + 6.5, y = c(textadjy, textadjy - 0.1, textadjy - 0.2, textadjy - 0.3), label = cox_adj,
+      hjust = 0.5, size = 6, fontface = "bold", colour = c("black", global_cols[3:1])
+    )
 
   # n at risk
   table_data <- plot_data %>%
     filter(
-      time %in% c(seq(0, global_followup_years, 1) * 365)
+      time %in% c(seq(0, global_followup_months, 2) * 30.5)
     )
 
-  t <- ggplot(table_data, aes(y = strata, x = time / 365)) +
-    geom_text(aes(label = n.risk), size = 6, colour = rep(global_cols[3:1], each = 6)) +
+  t <- ggplot(table_data, aes(y = strata, x = time / 30.5)) +
+    geom_text(aes(label = n.risk), size = 6, fontface = "bold", colour = rep(global_cols[3:1], each = 7)) +
     # scale_x_continuous(breaks = seq(0, endfollow, 1), limits = c(0, endfollow), expand = c(0, 0)) +
     # scale_y_discrete(expand = c(0, 0)) +
-    scale_x_continuous(breaks = seq(0, global_followup_years, 1), limits = c(0, global_followup_years)) +
-    coord_cartesian(xlim = c(0, global_followup_years), clip = "off") +
-    labs(subtitle = "No. at risk") +
+    scale_x_continuous(breaks = seq(0, global_followup_months, 2), limits = c(0, global_followup_months)) +
+    coord_cartesian(xlim = c(0, global_followup_months), clip = "off") +
+    labs(
+      subtitle = "No. at risk"
+    ) +
     theme(
-      plot.caption = element_text(size = 20),
+      text = element_text(size = 20, face = "bold"),
+      plot.caption = element_text(size = 20, face = "bold"),
       panel.background = element_blank(),
-      text = element_text(size = 20),
       axis.text.x = element_blank(),
       axis.ticks = element_blank(),
       axis.title = element_blank(),
       # plot.margin = unit(c(0, 1, 0, 3), "cm"), # trouble
       # axis.text.y = element_blank()
       # axis.text.y = element_text(margin = margin(0, 0, 0, 100))
-      axis.text.y = element_text(hjust = 0, colour = global_cols[1:3])
+      axis.text.y = element_text(hjust = 0, colour = global_cols[1:4], face = "bold")
     )
 
   km <- (p / t) + plot_layout(height = c(1, .25))
@@ -143,9 +155,7 @@ nr <- 4
 kmfunc(
   time = outvars$time[nr],
   event = outvars$var[nr],
-  eventname = outvars$shortname[nr], 
-  textadjy = 0.42,
-  textadjx = 1
+  eventname = outvars$shortname[nr]
 )
 ```
 
@@ -193,9 +203,7 @@ kmfunc(
   time = outvars$time[nr],
   event = outvars$var[nr],
   eventname = outvars$shortname[nr],
-  novar = "shf_ef_cat", 
-  textadjy = 0.42,
-  textadjx = 1
+  novar = "shf_ef_cat"
 )
 ```
 
@@ -243,9 +251,7 @@ kmfunc(
   time = outvars$time[nr],
   event = outvars$var[nr],
   eventname = outvars$shortname[nr],
-  novar = "shf_ef_cat", 
-  textadjy = 0.42,
-  textadjx = 1
+  novar = "shf_ef_cat"
 )
 ```
 
@@ -293,8 +299,102 @@ kmfunc(
   time = outvars$time[nr],
   event = outvars$var[nr],
   eventname = outvars$shortname[nr],
-  novar = "shf_ef_cat", 
-  textadjy = 0.42,
-  textadjx = 1
+  novar = "shf_ef_cat"
+)
+```
+
+```{r}
+#| label: fig-cicmcf-out
+#| cache: true
+#| cache.comments: false
+#| dependson: kmfunc
+#| fig-cap: "Cumulative incidence - Out-patient"
+#| fig-subcap: !expr outvars$name
+#| layout-ncol: 2
+#| layout-nrow: 2
+
+nr <- 1
+kmfunc(
+  data = rsdata %>% filter(shf_location == "Out-patient"),
+  impdata = impdataout,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_location"
+)
+nr <- 2
+kmfunc(
+  data = rsdata %>% filter(shf_location == "Out-patient"),
+  impdata = impdataout,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_location"
+)
+nr <- 3
+kmfunc(
+  data = rsdata %>% filter(shf_location == "Out-patient"),
+  impdata = impdataout,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_location"
+)
+nr <- 4
+kmfunc(
+  data = rsdata %>% filter(shf_location == "Out-patient"),
+  impdata = impdataout,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_location"
+)
+```
+
+```{r}
+#| label: fig-cicmcf-in
+#| cache: true
+#| cache.comments: false
+#| dependson: kmfunc
+#| fig-cap: "Cumulative incidence - In-patient"
+#| fig-subcap: !expr outvars$name
+#| layout-ncol: 2
+#| layout-nrow: 2
+
+nr <- 1
+kmfunc(
+  data = rsdata %>% filter(shf_location == "In-patient"),
+  impdata = impdatain,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_location"
+)
+nr <- 2
+kmfunc(
+  data = rsdata %>% filter(shf_location == "In-patient"),
+  impdata = impdatain,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_location"
+)
+nr <- 3
+kmfunc(
+  data = rsdata %>% filter(shf_location == "In-patient"),
+  impdata = impdatain,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_location"
+)
+nr <- 4
+kmfunc(
+  data = rsdata %>% filter(shf_location == "In-patient"),
+  impdata = impdatain,
+  time = outvars$time[nr],
+  event = outvars$var[nr],
+  eventname = outvars$shortname[nr],
+  novar = "shf_location"
 )
 ```

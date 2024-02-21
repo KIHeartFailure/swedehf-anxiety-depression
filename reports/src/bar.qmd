@@ -4,8 +4,6 @@
 #| cache: true
 #| cache.comments: false
 #| fig-cap: "Anxiety/depression by EF"
-#| fig-width: 10
-#| fig-height: 8
 
 figdata <- rsdata %>%
   group_by(shf_ef_cat, .drop = F) %>%
@@ -21,15 +19,116 @@ p <- ggplot(figdata, aes(x = shf_ef_cat, y = p, fill = shf_anxiety)) +
   scale_y_continuous(limits = c(0, 100)) +
   theme_classic() +
   theme(
-    text = element_text(size = 22),
+    text = element_text(size = 27, face = "bold"),
     legend.position = "bottom",
     legend.box = "vertical",
     legend.title = element_blank(),
+    axis.text = element_text(color = "black"),
     axis.title.x = element_blank()
   ) +
   labs(y = "Proportion (%)") +
-  geom_text(aes(label = fn(p, dec = 0)), position = position_dodge(width = 0.9), vjust = -0.25, size = 8)
+  geom_text(aes(label = fn(p, dec = 0)), position = position_dodge(width = 0.9), vjust = -0.25, size = 8, fontface = "bold")
 
-create_pptx(p, width = 10, height = 8)
+create_pptx(p)
 p
+```
+
+```{r}
+#| label: doufunc
+#| cache: true
+#| cache.comments: false
+
+doufunc <- function(var, vals = NULL) {
+  lvl0 <- tibble(name = "", n = 0, level = 0, fill = NA, lab = NA)
+
+  if (!is.null(vals)) {
+    data <- rsdata %>%
+      filter(!is.na(!!sym(var))) %>%
+      mutate(!!sym(var) := factor(!!sym(var), labels = vals))
+  } else {
+    data <- rsdata %>%
+      filter(!is.na(!!sym(var)))
+  }
+
+  lvl1 <- data %>%
+    count(!!sym(var)) %>%
+    mutate(
+      p = n / sum(n) * 100,
+      lab = paste0(!!sym(var), "\n", fn(p, 0), "%")
+    ) %>%
+    mutate(
+      level = 1,
+      fill = !!sym(var)
+    ) %>%
+    rename(name = !!sym(var))
+
+  lvl2 <- data %>%
+    group_by(!!sym(var)) %>%
+    count(shf_anxiety) %>%
+    mutate(
+      p = n / sum(n) * 100,
+      lab2 = paste0(shf_anxiety, "\n", fn(p, 0), "%")
+    ) %>%
+    ungroup() %>%
+    arrange(desc(!!sym(var)), desc(shf_anxiety)) %>%
+    mutate(
+      level = 2,
+      fill = !!sym(var),
+      pos = (sum(n) - cumsum(n)) + n / 2
+    ) %>%
+    arrange(!!sym(var), shf_anxiety) %>%
+    rename(name = shf_anxiety)
+
+  piedata <- bind_rows(lvl0, lvl1, lvl2) %>%
+    mutate(
+      level = as.factor(level),
+      name = fct_rev(forcats::fct_inorder(name)),
+      fill = fct_rev(fill)
+    )
+
+  p <- piedata %>%
+    ggplot(aes(x = level, y = n, fill = fill, alpha = level)) +
+    geom_col(width = 1, color = "white", position = position_stack()) +
+    geom_text(aes(label = lab), size = 4.5, fontface = "bold", position = position_stack(vjust = 0.5)) +
+    geom_text_repel(aes(y = pos, label = lab2),
+      size = 4.5, show.legend = FALSE, vjust = 0.5, nudge_x = 0.8, hjust = 0.5, fontface = "bold", alpha = 1
+    ) +
+    coord_polar(theta = "y", start = 0) +
+    scale_alpha_manual(values = c("0" = 0, "1" = 1, "2" = 0.7)) +
+    scale_x_discrete(breaks = NULL) +
+    scale_y_continuous(breaks = NULL) +
+    scale_fill_brewer(palette = "Set1", na.translate = F, direction = -1) +
+    theme_void() +
+    theme(
+      legend.position = "none"
+    )
+
+  create_pptx(p, width = 6, height = 6)
+  p
+}
+```
+
+```{r}
+#| label: fig-doughnut
+#| cache: true
+#| cache.comments: false
+#| dependson: doufunc
+#| fig-cap: "Anxiety/depression"
+#| fig-subcap: ["EF", "Sex", "Age", "Location", "Duration HF", "NYHA"]
+#| fig-height: 6
+#| fig-width: 6
+#| layout-ncol: 2
+#| layout-nrow: 3
+
+doufunc(var = "shf_ef_cat")
+
+doufunc(var = "shf_sex")
+
+doufunc(var = "shf_age_cat", vals = c("Age \u226475 years", "Age >75 years"))
+
+doufunc("shf_location")
+
+doufunc("shf_durationhf", vals = c("HF duration <6 months", "HF duration \u22656 months"))
+
+doufunc("shf_nyha_cat", vals = c("NYHA I-II", "NYHA III-IV"))
 ```

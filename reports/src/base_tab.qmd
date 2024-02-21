@@ -181,8 +181,7 @@ basetabfunc <- function(data, novars = NULL) {
   tab <- tab %>%
     mutate(
       footnote1 = if_else(!is.na(var) & var %in% modvars, footnote_marker_alphabet(1, format = "latex"), ""),
-      footnote2 = if_else(!is.na(var) & var %in% c("shf_potassium_cat", "shf_potassium"), footnote_marker_alphabet(2, format = "latex"), ""),
-      footnote3 = if_else(!is.na(var) & var %in% c("shf_sglt2"), footnote_marker_alphabet(3, format = "latex"), "")
+      footnote2 = if_else(!is.na(var) & var %in% c("shf_sglt2"), footnote_marker_alphabet(2, format = "latex"), "")
     ) %>%
     unite(footnote, starts_with("footnote"), sep = "")
 
@@ -190,7 +189,6 @@ basetabfunc <- function(data, novars = NULL) {
 
   footnotetext <- c(
     "Included in multiple imputation and regression models.",
-    "Patients from 2006.",
     "Patients from 28 April 2021."
   )
 
@@ -204,8 +202,7 @@ basetabfunc <- function(data, novars = NULL) {
     select(Variable, pmis:p) %>%
     add_row(Variable = "") %>%
     add_row(Variable = paste0("a ", footnotetext[1])) %>%
-    add_row(Variable = paste0("b ", footnotetext[2])) %>%
-    add_row(Variable = paste0("c ", footnotetext[3]))
+    add_row(Variable = paste0("b ", footnotetext[2]))
 
   make_one_xlsxsheet(tab_xls, colnames = cn)
 
@@ -289,4 +286,24 @@ basetabfunc(data = rsdata %>% filter(shf_ef_cat == "HFmrEF"), novar = "shf_ef_ca
 #| tbl-cap: "Baseline characteristics - HFpEF"
 
 basetabfunc(data = rsdata %>% filter(shf_ef_cat == "HFpEF"), novar = "shf_ef_cat")
+```
+
+```{r}
+#| label: tbl-base-in
+#| cache: true
+#| cache.comments: false
+#| dependson: basetabfunc
+#| tbl-cap: "Baseline characteristics - Out-patient"
+
+basetabfunc(data = rsdata %>% filter(shf_location == "Out-patient"), novar = "shf_location")
+```
+
+```{r}
+#| label: tbl-base-out
+#| cache: true
+#| cache.comments: false
+#| dependson: basetabfunc
+#| tbl-cap: "Baseline characteristics - In-patient"
+
+basetabfunc(data = rsdata %>% filter(shf_location == "In-patient"), novar = "shf_location")
 ```
