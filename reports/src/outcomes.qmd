@@ -75,25 +75,25 @@ outcomesfunc_inner <- function(data = rsdata, impdata = imprsdata, time, event, 
 
   if (fg) {
     out[4, 2] <- "Crude Sub-distributional Hazard Ratio (95% CI), p-value"
-    # mod <- summary(crr(
-    #   ftime = data %>% pull(!!sym(time)),
-    #   fstatus = data %>% pull(!!sym(paste0(event, "_cr"))),
-    #   cov1 = data %>% select(starts_with(paste0(xvar, "_cr_"))),
-    #   failcode = 1,
-    #   cencode = 0
-    # ))
-    #
-    # out[4, 3:5] <- c(
-    #   "reference",
-    #   paste0(
-    #     fn(mod$coef[, "exp(coef)"], dig = 2),
-    #     " (",
-    #     fn(exp(mod$coef[, "coef"] - global_z05 * mod$coef[, "se(coef)"]), dig = 2),
-    #     "-",
-    #     fn(exp(mod$coef[, "coef"] + global_z05 * mod$coef[, "se(coef)"]), dig = 2), "), ",
-    #     fn(mod$coef[, "p-value"], dig = 3, p = TRUE)
-    #   )
-    # )
+    mod <- summary(crr(
+      ftime = data %>% pull(!!sym(time)),
+      fstatus = data %>% pull(!!sym(paste0(event, "_cr"))),
+      cov1 = data %>% select(starts_with(paste0(xvar, "_cr_"))),
+      failcode = 1,
+      cencode = 0
+    ))
+
+    out[4, 3:5] <- c(
+      "reference",
+      paste0(
+        fn(mod$coef[, "exp(coef)"], dig = 2),
+        " (",
+        fn(exp(mod$coef[, "coef"] - global_z05 * mod$coef[, "se(coef)"]), dig = 2),
+        "-",
+        fn(exp(mod$coef[, "coef"] + global_z05 * mod$coef[, "se(coef)"]), dig = 2), "), ",
+        fn(mod$coef[, "p-value"], dig = 3, p = TRUE)
+      )
+    )
 
     out[5, 2] <- "Adjusted Sub-distributional Hazard Ratio (95% CI), p-value"
     if (!is.null(novar)) {
@@ -102,18 +102,18 @@ outcomesfunc_inner <- function(data = rsdata, impdata = imprsdata, time, event, 
       modvars_crr2 <- modvars_crr
     }
     modvars_crr2 <- c(vars_crr[str_detect(vars_crr, paste0(xvar, "_cr_"))], modvars_crr2)
-    #  mod <- crr_mids(time, event = paste0(event, "_cr"), xvars = modvars_crr2, impdata)
-    #  mod <- summary(pool(mod))
+    mod <- crr_mids(time, event = paste0(event, "_cr"), xvars = modvars_crr2, impdata)
+    mod <- summary(pool(mod))
 
-    # out[5, 3:5] <- c(
-    #    "reference",
-    #   paste0(
-    #      fn(exp(mod$estimate[1:(nlevs - 1)]), dig = 2),
-    #      " (", fn(exp(mod$estimate[1:(nlevs - 1)] - global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2),
-    #      "-", fn(exp(mod$estimate[1:(nlevs - 1)] + global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2), "), ",
-    #      fn(mod$p.value[1:(nlevs - 1)], dig = 3, p = TRUE)
-    #    )
-    #  )
+    out[5, 3:5] <- c(
+      "reference",
+      paste0(
+        fn(exp(mod$estimate[1:(nlevs - 1)]), dig = 2),
+        " (", fn(exp(mod$estimate[1:(nlevs - 1)] - global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2),
+        "-", fn(exp(mod$estimate[1:(nlevs - 1)] + global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2), "), ",
+        fn(mod$p.value[1:(nlevs - 1)], dig = 3, p = TRUE)
+      )
+    )
   }
   return(out)
 }

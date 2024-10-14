@@ -15,7 +15,7 @@ figdata <- rsdata %>%
 
 p <- ggplot(figdata, aes(x = shf_ef_cat, y = p, fill = shf_anxiety)) +
   geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_manual(values = global_cols[3:1]) +
+  scale_fill_manual(values = global_cols[c(1, 3, 2)]) +
   scale_y_continuous(limits = c(0, 100)) +
   theme_classic() +
   theme(
@@ -97,7 +97,7 @@ doufunc <- function(var, vals = NULL) {
     scale_alpha_manual(values = c("0" = 0, "1" = 1, "2" = 0.7)) +
     scale_x_discrete(breaks = NULL) +
     scale_y_continuous(breaks = NULL) +
-    scale_fill_brewer(palette = "Set1", na.translate = F, direction = -1) +
+    scale_fill_brewer(palette = "Dark2", na.translate = F, direction = -1) +
     theme_void() +
     theme(
       legend.position = "none"

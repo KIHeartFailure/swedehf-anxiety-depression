@@ -37,14 +37,21 @@ meta <- bind_rows(
 
 vars <- left_join(vars, meta, by = c("var_tmp" = "Variable"))
 
+ihdspec <- str_split(str_trim(meta %>% filter(Variable %in% c("sos_com_pci", "sos_com_cabg", "sos_com_ihd")) %>% pull(Code)), " ", simplify = T)
+ihdspec <- c(ihdspec[, 1], ihdspec[, 2])
+ihdspec <- paste0(
+  paste0("ICD:", str_remove_all(paste0(ihdspec[str_detect(ihdspec, "ICD")], collapse = ","), "ICD:")),
+  " ",
+  paste0("OP:", str_remove_all(paste0(ihdspec[str_detect(ihdspec, "OP")], collapse = ","), "OP:"))
+)
+
 vars <- vars %>%
   mutate(
     Variable = coalesce(name, label, var_tmp),
     # small fixes
     Variable = str_replace_all(Variable, fixed("Disposable income (100 SEK)"), "Income"),
     Variable = str_replace_all(Variable, fixed("First heart failure hospitalization"), "Heart failure hospitalization"),
-    Variable = str_replace_all(Variable, fixed("First all-cause hospitalization"), "All-cause hospitalization"),
-    Code = if_else(Variable == "Heart failure hospitalization", str_remove(Code, "\\,4[^.]*$"), Code)
+    Variable = str_replace_all(Variable, fixed("First hospitalization"), "Hospitalization")
   )
 
 vars <- vars %>%
@@ -52,7 +59,10 @@ vars <- vars %>%
   mutate(
     order = 1:n(),
     Code = str_trim(Code),
+    Code = if_else(Variable == "Heart failure hospitalization", str_remove(Code, "\\,4[^.]*$"), Code),
+    Code = if_else(Variable == "Ischemic heart disease", paste0(Code, ",", ihdspec), Code),
     Code = str_replace_all(Code, "ICD", "ICD-10"),
+    Code = str_replace_all(Code, "OP", "Procedure"),
     Code = case_when(
       is.na(Register) ~ Code,
       Period == "0-" | str_detect(Code, "428") ~ str_replace_all(Code, "ICD-10", "ICD-9/10"),
@@ -89,8 +99,7 @@ vars <- vars %>%
     datasource = case_when(
       Variable == "eGFR" ~ "SwedeHF CKD-EPI 2021 (see reference)",
       Variable == "Anemia" ~ "SwedeHF Female Hb < 120/Male Hb < 130",
-      Variable == "Potassium" ~ "SwedeHF Normakalemia 3.5-5, Hypokalemia <3.5, Hyperkalemia >5",
-      Variable == "All-cause hospitalization" ~ "NPR",
+      Variable == "Hospitalization" ~ "NPR",
       TRUE ~ datasource
     )
   ) %>%

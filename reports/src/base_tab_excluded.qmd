@@ -1,0 +1,131 @@
+```{r}
+#| label: tbl-baseexclude
+#| cache: true
+#| cache.comments: false
+#| dependson: basetabfunc
+#| tbl-cap: "Baseline characteristics Included/Excluded"
+
+contdig <- tibble(vars = c("shf_potassium"), contdig = 1)
+catdig <- 0
+
+tab <- rsdataexclude %>%
+  count(incexc, .drop = F) %>%
+  mutate(n = paste0(n, " (", fn(n / sum(n) * 100, catdig), ")")) %>%
+  pivot_wider(names_from = incexc, values_from = n) %>%
+  mutate(
+    var = "N (%)",
+    level = NA,
+    p = NA,
+    pmis = NA
+  ) %>%
+  select(var, level, pmis, levels(rsdataexclude %>% pull(incexc)), p)
+
+tabtmp <- sapply(tabvars,
+  FUN = basetabfunc_inner, data = rsdataexclude,
+  stratavar = "incexc", catdig = catdig, contdig = contdig
+)
+
+tabtmp <- bind_rows(tabtmp)
+tab <- bind_rows(tab, tabtmp)
+
+tab <- tab %>%
+  mutate(
+    # if recoding or categorizing will still get org label
+    var_tmp = str_replace_all(var, "(_cat2|_cat)", ""),
+    # if shf/sos combination  will still get org label
+    var_tmp = str_replace_all(var_tmp, "shf_sos_com_", "sos_com_")
+  )
+
+tab <- left_join(tab,
+  metavars %>%
+    select(variable, label, unit),
+  by = c("var_tmp" = "variable")
+) %>%
+  mutate(
+    Variable = coalesce(label, var_tmp),
+    Variable = if_else(!is.na(unit),
+      paste0(Variable, " (", unit, ")"),
+      Variable
+    ),
+    Variable = if_else(!is.na(level) & !is.na(Variable),
+      paste0(Variable, " ", level),
+      coalesce(Variable, paste0("  ", level))
+    ),
+    # small fixes
+    Variable = str_replace_all(Variable, fixed("Disposable income (100 SEK)"), "Income"),
+    Variable = str_replace_all(Variable, fixed("0-1"), "1")
+  )
+
+# footnotes
+tab <- tab %>%
+  mutate(
+    footnote1 = if_else(!is.na(var) & var %in% c("shf_potassium_cat", "shf_potassium"), footnote_marker_alphabet(1, format = "latex"), ""),
+    footnote2 = if_else(!is.na(var) & var %in% c("shf_fatigue", "shf_outofbreath", "shf_mobility", "shf_hygiene", "shf_activities", "shf_pain", "shf_anxiety"),
+      footnote_marker_alphabet(2, format = "latex"), ""
+    ),
+    footnote3 = if_else(!is.na(var) & var %in% c("shf_sglt2"), footnote_marker_alphabet(3, format = "latex"), "")
+  ) %>%
+  unite(footnote, starts_with("footnote"), sep = "")
+
+cn <- c("Variable", c("Missing (%)", levels(rsdataexclude %>% pull(incexc)), "p-value"))
+
+footnotetext <- c(
+  "Included in the CRF 2006.",
+  "Included in the CRF 1 February 2008.",
+  "Included in the CRF 28 April 2021."
+)
+
+# excel
+tab_xls <- tab %>%
+  mutate(
+    Variable = paste0(Variable, footnote),
+    Variable = str_remove_all(Variable, "textsuperscript|\\}|\\{"),
+    Variable = str_replace_all(Variable, "\\\\", " ")
+  ) %>%
+  select(Variable, pmis:p) %>%
+  add_row(Variable = "") %>%
+  add_row(Variable = paste0("a ", footnotetext[1])) %>%
+  add_row(Variable = paste0("b ", footnotetext[2])) %>%
+  add_row(Variable = paste0("c ", footnotetext[3]))
+
+make_one_xlsxsheet(tab_xls, colnames = cn)
+
+# footnotes
+tab <- tab %>%
+  mutate(
+    # so no probs
+    Variable = sanitize_text(Variable),
+    Variable = paste0(Variable, footnote),
+    Variable = str_replace_all(Variable, fixed("²"), "\\textsuperscript{2}"),
+    Variable = str_replace_all(Variable, fixed("$>$="), "$\\geq$"),
+    Variable = str_replace_all(Variable, fixed("$<$="), "$\\leq$")
+  ) %>%
+  select(Variable, pmis:p)
+
+indent_rows <- tab %>%
+  mutate(
+    indent_rows = str_detect(Variable, "  "),
+    rows = row_number()
+  ) %>%
+  filter(indent_rows) %>%
+  pull(rows)
+
+cn <- sanitize_text(cn)
+
+default_kable(tab,
+  font_size = 7.5,
+  longtable = TRUE,
+  escape = FALSE,
+  col.names = cn
+) %>%
+  add_indent(indent_rows) %>%
+  footnote(
+    footnote_order = c("general", "symbol", "alphabet"),
+    general_title = "",
+    general = c(
+      "Categorical variables are presented with n (%) and tested with chi-square test and continuous variables with median [q1-q3] and tested with Kruskal-Wallis test."
+    ),
+    alphabet = footnotetext,
+    threeparttable = T
+  )
+```

@@ -1,6 +1,5 @@
 ---
 title: "Statistical report: Anxiety/depression across the EF spectrum: an analysis from the Swedish Heart Failure Registry"
-subtitle: Draft
 date: "`r Sys.Date()`"
 cover: static/ki_logo_vert_rgb.png
 editor: source
@@ -77,7 +76,7 @@ clinical diagnosis of HF, which was thereafter defined according to the ICD-10
 codes I50.0, I50.1, I50.9, I42.0, I42.6, I42.7, I25.5, I11.0, I13.0, I13.2. 
 In 2021, 69 of 76 Swedish hospitals enrolled patients in SwedeHF, which had a 32% coverage of the prevalent HF population in Sweden[@annualreport]. 
 
-SwedeHF was linked with national Swedish registries (SHFDB version 4.1.2) through the 
+SwedeHF was linked with national Swedish registries (SHFDB version 4.2.1) through the 
 Swedish personal identity number (PIN)[@pin]: 
 
 - The National Patient Register (The National Board of Health and Welfare) for 
@@ -108,7 +107,8 @@ default_kable(flow) %>%
   row_spec(c(1, 11), bold = T)
 ```
 
-First patient in: `r min(rsdata$shf_indexdtm)` and last patient in: `r max(rsdata$shf_indexdtm)`.  
+First patient in `r min(rsdata$shf_indexdtm)` and last patient in `r max(rsdata$shf_indexdtm)` 
+from approximately `r rsdata %>% distinct(shf_centre) %>% count() %>% pull(n)` enrolling centers. 
 
 ## Definitions
 
@@ -155,12 +155,12 @@ Separate analyses were further performed for the respective EF groups and in/out
 ## Independent associations between baseline characteristics and anxiety/depression
 
 The association between baseline characteristics and anxiety/depression was evaluated using a multivariable multinominal regression 
-including the variables indicated in @tbl-base (all shown in @fig-predictors). The variables were selected based on clinical relevance. 
+including the variables indicated in @tbl-base (all shown in the Forestplots). The variables were selected based on clinical relevance. 
 
 ### Assumptions
 
 Possible outliers were evaluated using Cook's distance and multicollinearity was 
-evaluated using the Variance Inflation Factor (VIF). TO BE CHECKED
+evaluated using the Variance Inflation Factor (VIF) without any cause for action.
 
 ## Association between outcomes and anxiety/depression
 
@@ -178,9 +178,9 @@ variables indicated in @tbl-base.
 
 Cox proportional hazards regressions were used to model the time to first event. 
 As a consistency analysis for the secondary outcomes, a sub-distributional hazards model[@fg] was used, 
-where deaths not defined as an event were treated as competing events.
+where deaths not defined as an event were treated as competing events (not performed for the subgroups).
 
-Data were censored at `r global_followup_months` months follow-up, 2021-12-31 or emigration from Sweden. 
+Data were censored at `r global_followup_months` months follow-up, 2023-12-31 or emigration from Sweden. 
 In the Cox proportional hazard regression censoring was also performed at death from other causes than the event. 
 
 Separate analyses were further performed for the respective EF groups and in/out-patients. 
@@ -189,7 +189,7 @@ Separate analyses were further performed for the respective EF groups and in/out
 
 The proportional hazards assumption was investigated using the scaled Schoenfeld 
 residuals for the primary outcome leading to that `r paste0(stratavars, collapse = ", ")` was stratified for in the models. 
-Possible outliers were visually inspected by plotting the dfbetas. TO BE CHECKED.
+Possible outliers were visually inspected by plotting the dfbetas. 
 
 # Results
 
@@ -215,6 +215,8 @@ The median (q1-q3) age is `r med` and `r percfem`% females.
 ## Baseline characteristics
 
 {{< include src/base_tab.qmd >}}
+
+{{< include src/base_tab_excluded.qmd >}}
 
 {{< include src/bar.qmd >}}
 

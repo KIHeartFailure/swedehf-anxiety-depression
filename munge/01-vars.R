@@ -97,12 +97,6 @@ tabvars_not_in_mod <- c(
   "sos_com_charlsonci_cat",
   "shf_qol",
   "shf_qol_cat",
-  "shf_fatigue",
-  "shf_outofbreath",
-  "shf_mobility",
-  "shf_hygiene",
-  "shf_activities",
-  "shf_pain",
   "shf_sglt2"
 )
 
@@ -114,7 +108,7 @@ outvars <- tibble(
   var = c("sos_out_death", "sos_out_deathcv", "sos_out_hosphf", "sos_out_hospany"),
   time = c("sos_outtime_death", "sos_outtime_death", "sos_outtime_hosphf", "sos_outtime_hospany"),
   shortname = c("Death", "CVD", "1st HFH", "1st Hospitalization"),
-  name = c("All-cause death", "Cardiovascular death", "First heart failure hospitalization", "First all-cause hospitalization"),
+  name = c("Death", "Cardiovascular death", "First heart failure hospitalization", "First hospitalization"),
   composite = c(F, F, F, F),
   rep = c(F, F, F, F),
   primary = c(T, F, F, F),

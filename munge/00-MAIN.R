@@ -4,12 +4,12 @@ source(here::here("setup/setup.R"))
 
 # Load data ---------------------------------------------------------------
 
-load(here(shfdbpath, "data/v412/rsdata412.RData"))
+load(here(shfdbpath, "data/v421/rsdata421.RData"))
 
 # Meta data ect -----------------------------------------------------------
 
 metavars <- read.xlsx(here(shfdbpath, "metadata/meta_variables.xlsx"))
-load(here(paste0(shfdbpath, "data/v412/meta_statreport.RData")))
+load(here(paste0(shfdbpath, "data/v421/meta_statreport.RData")))
 
 # Munge data --------------------------------------------------------------
 
@@ -25,6 +25,7 @@ save(
   file = here("data/clean-data/data.RData"),
   list = c(
     "rsdata",
+    "rsdataexclude",
     "imprsdata",
     "flow",
     "modvars",

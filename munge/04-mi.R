@@ -1,14 +1,16 @@
 # Impute missing values ---------------------------------------------------
 
+rsdatauseforimp <- rsdata %>%
+  select(lopnr, shf_indexdtm, contains(outvars$var), !!!syms(outvars$time), !!!syms(modvars), contains("shf_anxiety"))
+
+noimpvars <- names(rsdatauseforimp)[!names(rsdatauseforimp) %in% modvars]
+
 # Nelson-Aalen estimator
 na <- basehaz(coxph(Surv(sos_outtime_death, sos_out_death == "Yes") ~ 1,
   data = rsdata, method = "breslow"
 ))
 
-rsdatauseforimp <- left_join(rsdata, na, by = c("sos_outtime_death" = "time")) %>%
-  select(lopnr, shf_indexdtm, contains(outvars$var), !!!syms(outvars$time), !!!syms(modvars), contains("shf_anxiety"))
-
-noimpvars <- names(rsdatauseforimp)[!names(rsdatauseforimp) %in% modvars]
+rsdatauseforimp <- left_join(rsdatauseforimp, na, by = c("sos_outtime_death" = "time"))
 
 ini <- mice(rsdatauseforimp, maxit = 0, print = F)
 
