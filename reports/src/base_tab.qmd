@@ -174,7 +174,7 @@ basetabfunc <- function(data, novars = NULL) {
         coalesce(Variable, paste0("  ", level))
       ),
       # small fixes
-      Variable = str_replace_all(Variable, fixed("Disposable income (100 SEK)"), "Income"), 
+      Variable = str_replace_all(Variable, fixed("Disposable income (100 SEK)"), "Income"),
       Variable = str_replace_all(Variable, fixed("0-1"), "1")
     )
 

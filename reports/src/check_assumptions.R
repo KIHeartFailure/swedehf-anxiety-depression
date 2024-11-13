@@ -28,6 +28,9 @@ ggcoxdiagnostics(mod,
 )
 
 
+car::vif(mod)
+rms::vif(mod)
+
 i <- 2
 mod <- coxph(formula(paste0(
   "Surv(", outvars$time[i], ",", outvars$var[i], " == 'Yes') ~ shf_anxiety + ", paste(modvars, collapse = " + ")

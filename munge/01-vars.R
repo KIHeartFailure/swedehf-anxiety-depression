@@ -76,6 +76,15 @@ tabvars <- c(
   "shf_pain"
 )
 
+qolvars <- c(
+  "shf_fatigue",
+  "shf_outofbreath",
+  "shf_mobility",
+  "shf_hygiene",
+  "shf_activities",
+  "shf_pain"
+)
+
 # Variables for models (imputation, log, cox reg) ----------------------------
 
 tabvars_not_in_mod <- c(

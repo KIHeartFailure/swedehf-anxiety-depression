@@ -212,3 +212,220 @@ pall2 <- p2 + t2 +
 create_pptx(pall2, height = 8, width = 8)
 pall2
 ```
+
+```{r}
+#| label: predictors-noqol
+#| cache: true
+#| cache.comments: false
+#| output: false
+
+modvarstmp <- setdiff(modvars, qolvars)
+
+adjmod <- with(imprsdata, multinom(formula(paste0("shf_anxiety ~ ", paste(modvarstmp, collapse = " + ")))))
+adjmod <- summary(pool(adjmod))
+
+adj <- tibble(
+  anxiety = adjmod$y.level,
+  var = as.character(adjmod$term),
+  or = exp(adjmod$estimate),
+  lci = exp(adjmod$estimate - global_z05 * adjmod$std.error),
+  uci = exp(adjmod$estimate + global_z05 * adjmod$std.error),
+  # p = fn(adjmod$p.value, dig = 3, p = TRUE),
+  orci = paste0(
+    fn(or, 2), " (",
+    fn(lci, 2), "-",
+    fn(uci, 2), ")" # , ",
+    # p
+  ),
+  cols = factor(case_when(
+    adjmod$p.value >= 0.05 ~ 2,
+    or >= 1 ~ 1,
+    or < 1 ~ 3
+  ))
+) %>%
+  filter(!var %in% c("(Intercept)")) %>%
+  mutate(
+    var = str_replace_all(var, fixed("Yes"), ""),
+    var = str_replace_all(var, "shf_sos_com_", "sos_com_")
+  )
+
+adj <- left_join(adj,
+  metavars %>%
+    select(variable, label),
+  by = c("var" = "variable")
+) %>%
+  mutate(
+    var = coalesce(label, var),
+    var = case_when(
+      var == "shf_indexyear_cat2013-2017" ~ "Year 2013-2017 vs 2008-2012",
+      var == "shf_indexyear_cat2018-2023" ~ "Year 2018-2023 vs 2008-2012",
+      var == "shf_durationhf>=6" ~ "Duration of HF (months) >=6 vs < 6",
+      var == "shf_sexMale" ~ "Male vs Female",
+      var == "shf_age_cat>75" ~ "Age (years) >75 vs <=75",
+      var == "shf_locationIn-patient" ~ "In-patient vs Out-patient",
+      var == "shf_followuplocation_catHospital" ~ "Follow-up hospital vs Primary care/Other",
+      var == "shf_ef_catHFmrEF" ~ "HFmrEF vs HFrEF",
+      var == "shf_ef_catHFpEF" ~ "HFpEF vs HFrEF",
+      var == "shf_nyha_catIII-IV" ~ "NYHA class III-IV vs I-II",
+      var == "shf_bmi_cat>=30" ~ "BMI (kg/m²) >=30 vs <30",
+      var == "shf_bpsys_cat>=140" ~ "Systolic blood pressure (mmHg) >=140 vs <140",
+      var == "shf_heartrate_cat>70" ~ "Heart rate (beats/min) >70 vs <=70",
+      var == "shf_gfrckdepi_cat<60" ~ "eGFR (mL/min/1.73 m²) <60 vs >=60",
+      var == "shf_potassium_catHyperkalemia" ~ "Hyperkalemia vs Normakalemia",
+      var == "shf_potassium_catHypokalemia" ~ "Hypokalemia vs Normakalemia",
+      var == "shf_ntprobnp_cat>=median within EF" ~ "NT-proBNP (pg/ml) >=median vs <median",
+      var == "shf_device_catCRT/ICD" ~ "ICD/CRT",
+      var == "scb_famtypeLiving alone" ~ "Living alone vs Cohabitating",
+      var == "scb_educationUniversity" ~ "University vs Compulsory/secondary school",
+      var == "scb_dispincome_cat>=median within year" ~ "Income >=median vs <median",
+      var == "shf_fatigueAt moderate effort" ~ "Fatigue At moderate effort vs At rest",
+      var == "shf_fatigueAt more than moderate effort" ~ "Fatigue At more than moderate effort vs At rest",
+      var == "shf_fatigueUnaffected" ~ "Fatigue Unaffected vs At rest",
+      var == "shf_outofbreathAt moderate effort" ~ "Out of breath At moderate effort vs At rest",
+      var == "shf_outofbreathAt more than moderate effort" ~ "Out of breath At more than moderate effort vs At rest",
+      var == "shf_outofbreathUnaffected" ~ "Out of breath Unaffected vs At rest",
+      var == "shf_mobilitySome problem" ~ "Mobilty Some problem vs Bedridden",
+      var == "shf_mobilityNo problem" ~ "Mobilty No problem vs Bedridden",
+      var == "shf_hygieneSome problem" ~ "Hygiene Some problem vs Can’t wash and clothe",
+      var == "shf_hygieneNo problem" ~ "Hygiene No problem vs Can’t wash and clothe",
+      var == "shf_activitiesSome problem" ~ "Main activities Some problem vs Can’t do",
+      var == "shf_activitiesNo problem" ~ "Main activities No problem vs Can’t do",
+      var == "shf_painModerate" ~ "Pain Moderate vs Severe",
+      var == "shf_painNone" ~ "Pain None vs Severe",
+      TRUE ~ var
+    ),
+    var = str_replace_all(var, ">=", "\u2265"),
+    var = str_replace_all(var, "<=", "\u2264"),
+    var2 = forcats::fct_rev(forcats::fct_inorder(var))
+  )
+
+# plot it
+size_use <- 12
+
+# min(adj$lci)
+# max(adj$uci)
+
+xmin <- .4
+xmax <- 2.6
+```
+
+```{r}
+#| label: fig-predictors-1-noqol
+#| cache: true
+#| cache.comments: false
+#| dependson: predictors-noqol
+#| fig-cap: "Independent associations between baseline characteristics and anxiety/depression Moderate vs None - excluding 6 QoL variables"
+#| fig-width: 8
+#| fig-height: 8
+
+p1 <- ggplot(adj %>% filter(anxiety == "Moderate"), aes(x = or, y = var2, color = cols)) +
+  # Add a reference dashed line at 1
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey", linewidth = 0.6) +
+  # Add dot plot and error bars
+  geom_errorbar(aes(xmin = lci, xmax = uci), width = 0, linewidth = 0.5) +
+  geom_point(size = 1.5, shape = 15) +
+  scale_color_manual(values = global_cols[c(2, 3, 1)]) +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use, face = "bold"),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.line.y = element_line(colour = "white"),
+    plot.margin = unit(c(0, 0, 0, 0), "mm"),
+    axis.text.x = element_text(color = "black"),
+    panel.grid.major.y = element_line(colour = "grey94")
+  ) +
+  scale_x_continuous(trans = "log", breaks = c(xmin, 1, xmax), limits = c(xmin, xmax))
+
+t1 <- ggplot(adj %>% filter(anxiety == "Moderate")) +
+  geom_text(aes(y = var2, x = 1, label = orci), size = size_use / .pt * 0.8, fontface = "bold") +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use, face = "bold"),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_blank(),
+    axis.line.y = element_line(colour = "white"),
+    plot.margin = unit(c(0, 0, 0, 0), "mm"),
+    axis.line.x = element_line(color = "white"),
+    axis.ticks.x = element_line(color = "white"),
+    axis.text.x = element_text(color = "white")
+  )
+
+pall1 <- p1 + t1 +
+  plot_annotation(
+    title = "Moderate vs None",
+    subtitle = "Odds Ratio (95% CI)",
+    theme = theme(
+      text = element_text(size = size_use, face = "bold"),
+      plot.title = element_text(hjust = 0.5),
+      plot.subtitle = element_text(hjust = 0.5)
+    )
+  )
+
+create_pptx(pall1, height = 8, width = 8)
+pall1
+```
+
+```{r}
+#| label: fig-predictors-2-noqol
+#| cache: true
+#| cache.comments: false
+#| dependson: predictors-noqol
+#| fig-cap: "Independent associations between baseline characteristics and anxiety/depression Severe vs None - excluding 6 QoL variables"
+#| fig-width: 8
+#| fig-height: 8
+
+
+p2 <- ggplot(adj %>% filter(anxiety == "Severe"), aes(x = or, y = var2, color = cols)) +
+  # Add a reference dashed line at 1
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey", linewidth = 0.6) +
+  # Add dot plot and error bars
+  geom_errorbar(aes(xmin = lci, xmax = uci), width = 0, linewidth = 0.5) +
+  geom_point(size = 1.5, shape = 15) +
+  scale_color_manual(values = global_cols[c(2, 3, 1)]) +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use, face = "bold"),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.line.y = element_line(colour = "white"),
+    plot.margin = unit(c(0, 0, 0, 0), "mm"),
+    axis.text.x = element_text(color = "black"),
+    panel.grid.major.y = element_line(colour = "grey94")
+  ) +
+  scale_x_continuous(trans = "log", breaks = c(xmin, 1, xmax), limits = c(xmin, xmax))
+
+t2 <- ggplot(adj %>% filter(anxiety == "Severe")) +
+  geom_text(aes(y = var2, x = 1, label = orci), size = size_use / .pt * 0.8, fontface = "bold") +
+  theme_classic() +
+  theme(
+    text = element_text(size = size_use, face = "bold"),
+    legend.position = "none",
+    axis.ticks.y = element_blank(),
+    axis.title = element_blank(),
+    axis.text.y = element_blank(),
+    axis.line.y = element_line(colour = "white"),
+    plot.margin = unit(c(0, 0, 0, 0), "mm"),
+    axis.line.x = element_line(color = "white"),
+    axis.ticks.x = element_line(color = "white"),
+    axis.text.x = element_text(color = "white")
+  )
+
+pall2 <- p2 + t2 +
+  plot_annotation(
+    title = "Severe vs None",
+    subtitle = "Odds Ratio (95% CI)",
+    theme = theme(
+      text = element_text(size = size_use, face = "bold"),
+      plot.title = element_text(hjust = 0.5),
+      plot.subtitle = element_text(hjust = 0.5)
+    )
+  )
+
+create_pptx(pall2, height = 8, width = 8)
+pall2
+```

@@ -156,6 +156,7 @@ Separate analyses were further performed for the respective EF groups and in/out
 
 The association between baseline characteristics and anxiety/depression was evaluated using a multivariable multinominal regression 
 including the variables indicated in @tbl-base (all shown in the Forestplots). The variables were selected based on clinical relevance. 
+A consistency analyses was performed excluding the 6 other QoL variables, `r paste0(qolvars, collapse = ", ")`.
 
 ### Assumptions
 
@@ -184,6 +185,8 @@ Data were censored at `r global_followup_months` months follow-up, 2023-12-31 or
 In the Cox proportional hazard regression censoring was also performed at death from other causes than the event. 
 
 Separate analyses were further performed for the respective EF groups and in/out-patients. 
+
+A consistency analyses was performed excluding the 6 other QoL variables, `r paste0(qolvars, collapse = ", ")`.
 
 ### Assumptions
 
@@ -220,9 +223,13 @@ The median (q1-q3) age is `r med` and `r percfem`% females.
 
 {{< include src/bar.qmd >}}
 
+\clearpage
+
 ## Independent associations between baseline characteristics and anxiety/depression
 
 {{< include src/predictors.qmd >}}
+
+\clearpage
 
 ## Association between outcomes and anxiety/depression
 

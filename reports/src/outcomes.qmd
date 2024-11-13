@@ -7,13 +7,14 @@ vars_crr <- names(mice::complete(imprsdata, 1))
 modvars_crr <- vars_crr[str_detect(vars_crr, paste0(paste0(modvars, "_cr_"), collapse = "|"))]
 coxvars <- modvars
 coxvars[modvars %in% stratavars] <- paste0("strata(", coxvars[modvars %in% stratavars], ")")
+coxvars_notqol <- setdiff(coxvars, qolvars)
 
 outcomesfunc_inner <- function(data = rsdata, impdata = imprsdata, time, event, eventname, xvar = "shf_anxiety",
                                fg = T, novar = NULL) {
   levs <- levels(data %>% pull(!!sym(xvar)))
   nlevs <- length(levs)
 
-  nrows <- if_else(fg, 5, 3)
+  nrows <- if_else(fg, 6, 4)
   out <- data.frame(matrix(NA, ncol = 2 + nlevs, nrow = nrows))
   colnames(out) <- c("Outcome", "Model", levs)
 
@@ -73,8 +74,27 @@ outcomesfunc_inner <- function(data = rsdata, impdata = imprsdata, time, event, 
     )
   )
 
+
+  ## 4 row - adjusted regression excluding qol variables
+  out[4, 2] <- "Adjusted Hazard Ratio (95% CI), p-value excluding 6 QoL variables"
+  coxvars_notqol2 <- setdiff(coxvars_notqol, novar)
+  mod <- summary(pool(with(impdata, coxph(formula(paste0(
+    "Surv(", time, ",", event, " == 'Yes') ~ ", xvar, "+", paste(coxvars_notqol2, collapse = " + ")
+  ))))))
+
+  out[4, 3:5] <- c(
+    "reference",
+    paste0(
+      fn(exp(mod$estimate[1:(nlevs - 1)]), dig = 2),
+      " (", fn(exp(mod$estimate[1:(nlevs - 1)] - global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2),
+      "-", fn(exp(mod$estimate[1:(nlevs - 1)] + global_z05 * mod$std.error[1:(nlevs - 1)]), dig = 2), "), ",
+      fn(mod$p.value[1:(nlevs - 1)], dig = 3, p = TRUE)
+    )
+  )
+
+
   if (fg) {
-    out[4, 2] <- "Crude Sub-distributional Hazard Ratio (95% CI), p-value"
+    out[5, 2] <- "Crude Sub-distributional Hazard Ratio (95% CI), p-value"
     mod <- summary(crr(
       ftime = data %>% pull(!!sym(time)),
       fstatus = data %>% pull(!!sym(paste0(event, "_cr"))),
@@ -83,7 +103,7 @@ outcomesfunc_inner <- function(data = rsdata, impdata = imprsdata, time, event, 
       cencode = 0
     ))
 
-    out[4, 3:5] <- c(
+    out[5, 3:5] <- c(
       "reference",
       paste0(
         fn(mod$coef[, "exp(coef)"], dig = 2),
@@ -95,7 +115,7 @@ outcomesfunc_inner <- function(data = rsdata, impdata = imprsdata, time, event, 
       )
     )
 
-    out[5, 2] <- "Adjusted Sub-distributional Hazard Ratio (95% CI), p-value"
+    out[6, 2] <- "Adjusted Sub-distributional Hazard Ratio (95% CI), p-value"
     if (!is.null(novar)) {
       modvars_crr2 <- modvars_crr[!str_detect(modvars_crr, novar)]
     } else {
@@ -105,7 +125,7 @@ outcomesfunc_inner <- function(data = rsdata, impdata = imprsdata, time, event, 
     mod <- crr_mids(time, event = paste0(event, "_cr"), xvars = modvars_crr2, impdata)
     mod <- summary(pool(mod))
 
-    out[5, 3:5] <- c(
+    out[6, 3:5] <- c(
       "reference",
       paste0(
         fn(exp(mod$estimate[1:(nlevs - 1)]), dig = 2),
@@ -174,6 +194,7 @@ outcomesfunc <- function(data, impdata, novar, fgall = T) {
 #| cache.comments: false
 #| dependson: outcomesfunc
 #| tbl-cap: "Association between outcomes and anxiety/depression"
+#| tbl-pos: "H"
 
 outcomesfunc(data = rsdata, impdata = imprsdata, novar = NULL)
 ```
@@ -184,6 +205,7 @@ outcomesfunc(data = rsdata, impdata = imprsdata, novar = NULL)
 #| cache.comments: false
 #| dependson: outcomesfunc
 #| tbl-cap: "Association between outcomes and anxiety/depression - HFrEF"
+#| tbl-pos: "H"
 
 impdataref <- mice::filter(imprsdata, rsdata %>% pull(shf_ef_cat) == "HFrEF")
 
@@ -196,6 +218,7 @@ outcomesfunc(data = rsdata %>% filter(shf_ef_cat == "HFrEF"), impdata = impdatar
 #| cache.comments: false
 #| dependson: outcomesfunc
 #| tbl-cap: "Association between outcomes and anxiety/depression - HFmrEF"
+#| tbl-pos: "H"
 
 impdatamref <- mice::filter(imprsdata, rsdata %>% pull(shf_ef_cat) == "HFmrEF")
 
@@ -208,6 +231,7 @@ outcomesfunc(data = rsdata %>% filter(shf_ef_cat == "HFmrEF"), impdata = impdata
 #| cache.comments: false
 #| dependson: outcomesfunc
 #| tbl-cap: "Association between outcomes and anxiety/depression - HFpEF"
+#| tbl-pos: "H"
 
 impdatapef <- mice::filter(imprsdata, rsdata %>% pull(shf_ef_cat) == "HFpEF")
 
@@ -220,6 +244,7 @@ outcomesfunc(data = rsdata %>% filter(shf_ef_cat == "HFpEF"), impdata = impdatap
 #| cache.comments: false
 #| dependson: outcomesfunc
 #| tbl-cap: "Association between outcomes and anxiety/depression - Out-patient"
+#| tbl-pos: "H"
 
 impdataout <- mice::filter(imprsdata, rsdata %>% pull(shf_location) == "Out-patient")
 
@@ -232,6 +257,7 @@ outcomesfunc(data = rsdata %>% filter(shf_location == "Out-patient"), impdata = 
 #| cache.comments: false
 #| dependson: outcomesfunc
 #| tbl-cap: "Association between outcomes and anxiety/depression - In-patient"
+#| tbl-pos: "H"
 
 impdatain <- mice::filter(imprsdata, rsdata %>% pull(shf_location) == "In-patient")
 

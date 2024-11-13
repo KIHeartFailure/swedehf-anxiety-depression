@@ -31,6 +31,7 @@ save(
     "modvars",
     "stratavars",
     "tabvars",
+    "qolvars",
     "outvars",
     "metavars",
     "deathmeta",
